@@ -289,15 +289,26 @@ on Render, including the same-origin proxy.
 Clients sign in at `/login` and see their next payment, their live site, what
 their plan covers, their invoices and a Pay now button.
 
-Create a login on the server that owns the real database. On Render that is the
-Shell tab of `orbit-backend`, not your laptop:
+### Creating a client login
+
+**Through the admin, no shell needed.** Render's free plan has no shell, so the
+admin page does the whole job. Sign in at `/admin/`, open **Client accounts**,
+press **Add**, and fill in the client's name and email. A login is created with
+a generated password, shown once in the green bar at the top of the next page.
+Copy it there and then: nothing stores it and nothing can recover it.
+
+The admin login itself is created on deploy from `DJANGO_SUPERUSER_EMAIL` and
+`DJANGO_SUPERUSER_PASSWORD`. Set both in the backend's environment before the
+first deploy, then clear the password once you have signed in and changed it.
+Re-running is harmless: it never resets a password that already exists.
+
+**From a shell, if you have one.** On a paid plan, or locally:
 
 ```
 python manage.py create_client --name "Their Name" --email "their@email.com" --first-invoice --setup-fee
 ```
 
-It prints a generated password once. Nothing recovers it, so send it over
-something other than email and ask them to change it.
+That also raises their first invoice in the same step.
 
 ### How payments settle
 

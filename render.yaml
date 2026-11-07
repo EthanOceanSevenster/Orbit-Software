@@ -118,6 +118,14 @@ services:
       - key: PAYSTACK_PUBLIC_KEY
         sync: false
 
+      # The admin login, created on deploy by bootstrap_admin. The free plan
+      # has no shell, so this is the only way to get a first login. Clear the
+      # password from here once you have signed in and changed it.
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+
   # ---------------------------------------------------------------------------
   # Next.js site
   # ---------------------------------------------------------------------------
