@@ -1,4 +1,17 @@
+import uuid
+from decimal import Decimal
+
+from django.conf import settings
 from django.db import models
+
+
+def new_payment_reference() -> str:
+    """A unique, URL-safe reference we hand to the payment provider.
+
+    Returns a string rather than a UUID object: this value is JSON-encoded into
+    the request to the provider, and a UUID would not serialise.
+    """
+    return uuid.uuid4().hex
 
 
 class TimeStampedModel(models.Model):
@@ -109,3 +122,153 @@ class ProjectRequest(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_website_type_display()})"
+
+
+class ClientAccount(TimeStampedModel):
+    """A paying customer's view of their own account.
+
+    One of these per login. It is what the client portal reads: what they pay
+    next, where their site lives, and what they are getting for the money.
+    """
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        PAUSED = "paused", "Paused"
+        CANCELLED = "cancelled", "Cancelled"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="client_account",
+    )
+    company_name = models.CharField(max_length=120)
+    website_url = models.URLField(
+        blank=True, help_text="The live site we built and host for this client."
+    )
+    plan = models.ForeignKey(
+        Plan, null=True, blank=True, on_delete=models.SET_NULL, related_name="clients"
+    )
+    addons = models.ManyToManyField(AddOn, blank=True, related_name="clients")
+    monthly_fee_override = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Set only to charge something other than the plan plus add-ons.",
+    )
+    next_payment_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    extra_services = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Anything beyond the plan, as a list of strings.",
+    )
+    notes = models.TextField(blank=True, help_text="Internal. Never shown to the client.")
+
+    class Meta:
+        ordering = ["company_name"]
+
+    def __str__(self) -> str:
+        return f"{self.company_name} ({self.user.get_username()})"
+
+    @property
+    def currency(self) -> str:
+        if self.plan:
+            return self.plan.currency
+        first_addon = self.addons.first()
+        return first_addon.currency if first_addon else "ZAR"
+
+    @property
+    def monthly_total(self) -> Decimal:
+        """What this client pays each month.
+
+        An override wins outright. Otherwise it is the plan fee plus every
+        add-on they have, which is how the quote on the website is built.
+        """
+        if self.monthly_fee_override is not None:
+            return self.monthly_fee_override
+        total = self.plan.monthly_fee if self.plan else Decimal("0.00")
+        for addon in self.addons.all():
+            total += addon.monthly_fee
+        return total
+
+    @property
+    def services(self) -> list[str]:
+        """Everything this client is getting, for display in the portal."""
+        items: list[str] = []
+        if self.plan:
+            items.extend(self.plan.features)
+        items.extend(addon.name for addon in self.addons.all())
+        items.extend(str(service) for service in (self.extra_services or []))
+        # Preserve order while dropping duplicates.
+        seen: set[str] = set()
+        return [i for i in items if not (i in seen or seen.add(i))]
+
+
+class Invoice(TimeStampedModel):
+    """A single amount a client owes, and whether it has been settled."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        DUE = "due", "Due"
+        PAID = "paid", "Paid"
+        OVERDUE = "overdue", "Overdue"
+        VOID = "void", "Void"
+
+    account = models.ForeignKey(
+        ClientAccount, on_delete=models.CASCADE, related_name="invoices"
+    )
+    number = models.CharField(max_length=40, unique=True)
+    description = models.CharField(max_length=200, blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default="ZAR")
+    issued_on = models.DateField()
+    due_on = models.DateField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DUE)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-issued_on", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.number} - {self.account.company_name}"
+
+    @property
+    def is_payable(self) -> bool:
+        return self.status in {self.Status.DUE, self.Status.OVERDUE}
+
+
+class Payment(TimeStampedModel):
+    """An attempt to settle an invoice through a payment gateway.
+
+    A row is created when the client starts a payment and updated when the
+    gateway reports back, so an abandoned attempt leaves a trace rather than
+    disappearing.
+    """
+
+    class Status(models.TextChoices):
+        STARTED = "started", "Started"
+        SUCCEEDED = "succeeded", "Succeeded"
+        FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
+    provider = models.CharField(max_length=40, default="paystack")
+    # Ours, generated here and sent to the gateway. Unique and never blank, so
+    # a callback carrying an empty reference cannot match some other payment.
+    reference = models.CharField(
+        max_length=64, unique=True, default=new_payment_reference, editable=False
+    )
+    # Whatever the gateway calls this transaction on their side.
+    provider_reference = models.CharField(max_length=120, blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default="ZAR")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.STARTED)
+    # Whatever the gateway sent back, kept verbatim for reconciling disputes.
+    provider_payload = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.provider} {self.get_status_display()} for {self.invoice.number}"

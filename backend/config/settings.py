@@ -208,6 +208,7 @@ REST_FRAMEWORK = {
     + (["rest_framework.renderers.BrowsableAPIRenderer"] if DEBUG else []),
     "DEFAULT_THROTTLE_RATES": {
         "form-submit": os.getenv("API_FORM_THROTTLE", "20/hour"),
+        "login": os.getenv("API_LOGIN_THROTTLE", "10/hour"),
     },
 }
 
@@ -263,6 +264,20 @@ COMPANY_LOCATION = os.getenv("COMPANY_LOCATION", "South Africa")
 # a surname. Kept in .env rather than in code so the repository never publishes
 # the very thing the rule exists to hide. The privacy test reads this list.
 SIGNATURE_FORBIDDEN_TERMS = env_list("SIGNATURE_FORBIDDEN_TERMS")
+
+# ---------------------------------------------------------------------------
+# Payments (Paystack)
+# ---------------------------------------------------------------------------
+# Blank until a Paystack account exists. While blank the portal tells clients
+# card payments are not available yet rather than pretending to take money.
+# The secret key must never reach the browser; only the public key may.
+
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
+PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "")
+
+# Where a payment provider sends the customer's browser back to. The website,
+# not the API.
+PORTAL_URL = os.getenv("PORTAL_URL", "http://localhost:3000").rstrip("/")
 
 # The signature markup lives in brand/signature/ so the website, Gmail and the
 # Django emails all use one source. It is company-only: no name, role or phone.

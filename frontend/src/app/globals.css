@@ -186,3 +186,47 @@ body {
     display: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Page transitions                                                     */
+/* ------------------------------------------------------------------ */
+/* The old page leaves quickly so it stops competing for attention, and
+   the new one arrives a little more slowly, after the old has gone. */
+:root {
+  --page-exit: 140ms;
+  --page-enter: 260ms;
+}
+
+::view-transition-old(.page-shift) {
+  animation: var(--page-exit) ease-in both page-out;
+}
+
+::view-transition-new(.page-shift) {
+  animation: var(--page-enter) ease-out var(--page-exit) both page-in;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* The header and footer stay put while the page between them changes. */
+::view-transition-group(root) {
+  animation-duration: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(.page-shift),
+  ::view-transition-new(.page-shift) {
+    animation: none;
+  }
+}

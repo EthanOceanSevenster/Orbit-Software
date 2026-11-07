@@ -97,6 +97,27 @@ services:
       - key: CORS_ALLOWED_ORIGINS
         sync: false
 
+      # The website's public origin, e.g. https://orbit-frontend-xxxx.onrender.com
+      #
+      # Required, not optional. A browser POST reaches Django through the
+      # website's proxy carrying the website's Origin header but the backend's
+      # host, so Django rejects it as cross-origin unless that origin is
+      # trusted here. Without it, signing out and paying both fail with 403.
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+
+      # Where a customer is sent back to after paying. The website, not the API.
+      - key: PORTAL_URL
+        sync: false
+
+      # Paystack. Leave blank until the account exists: the portal then tells
+      # clients card payments are not available rather than taking money.
+      # The secret key must never be given to the frontend service.
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+
   # ---------------------------------------------------------------------------
   # Next.js site
   # ---------------------------------------------------------------------------

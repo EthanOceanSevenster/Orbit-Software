@@ -1,6 +1,13 @@
 from rest_framework import serializers
 
-from .models import AddOn, ContactInquiry, Plan, ProjectRequest
+from .models import (
+    AddOn,
+    ClientAccount,
+    ContactInquiry,
+    Invoice,
+    Plan,
+    ProjectRequest,
+)
 
 
 class PlanSerializer(serializers.ModelSerializer):
@@ -57,3 +64,54 @@ class ProjectRequestSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+
+class ClientAccountSerializer(serializers.ModelSerializer):
+    """What a signed-in client sees about their own account.
+
+    Read-only, and deliberately narrow: `notes` is internal and must never
+    appear here.
+    """
+
+    monthly_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    currency = serializers.CharField(read_only=True)
+    services = serializers.ListField(child=serializers.CharField(), read_only=True)
+    plan_name = serializers.CharField(source="plan.name", read_only=True, default="")
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = ClientAccount
+        fields = [
+            "company_name",
+            "website_url",
+            "plan_name",
+            "monthly_total",
+            "currency",
+            "next_payment_date",
+            "status",
+            "status_label",
+            "services",
+        ]
+        read_only_fields = fields
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    is_payable = serializers.BooleanField(read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = Invoice
+        fields = [
+            "id",
+            "number",
+            "description",
+            "amount",
+            "currency",
+            "issued_on",
+            "due_on",
+            "status",
+            "status_label",
+            "is_payable",
+            "paid_at",
+        ]
+        read_only_fields = fields

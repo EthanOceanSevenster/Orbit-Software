@@ -17,7 +17,8 @@ Hosting plus the business email comes to R170 a month. Prices are editable in th
 Django admin under Plans and Add-ons; the values in `frontend/src/lib/site.ts`
 are only the fallback used when the API is unreachable.
 
-Online payments (PayGate) are planned but not wired up yet; see "Next steps".
+Card payments run through Paystack. They stay switched off until a secret key
+is set, and the portal says so plainly rather than pretending to take money.
 
 ## Project layout
 
@@ -283,10 +284,37 @@ npm start
 Django must be running on port 8000. The site then behaves exactly as it will
 on Render, including the same-origin proxy.
 
+## Client portal
+
+Clients sign in at `/login` and see their next payment, their live site, what
+their plan covers, their invoices and a Pay now button.
+
+Create a login on the server that owns the real database. On Render that is the
+Shell tab of `orbit-backend`, not your laptop:
+
+```
+python manage.py create_client --name "Their Name" --email "their@email.com" --first-invoice --setup-fee
+```
+
+It prints a generated password once. Nothing recovers it, so send it over
+something other than email and ask them to change it.
+
+### How payments settle
+
+An invoice is only marked paid after asking Paystack directly what happened.
+The webhook signature is checked, and the webhook is then treated as a prompt
+to go and verify rather than as the answer. A forged or replayed callback
+achieves nothing, and the amount and currency Paystack reports must match what
+was recorded when the payment started.
+
+While `PAYSTACK_SECRET_KEY` is blank, Pay now returns a clear message saying
+card payments are not available yet.
+
 ## Next steps
 
-- **PayGate:** add a `payments` app in Django (transaction model, initiate + notify/return
-  endpoints) and a checkout step after the get-started form.
+- **Paystack:** create an account, then set `PAYSTACK_SECRET_KEY` on the
+  backend service and add the webhook URL in the Paystack dashboard,
+  pointing at `/api/billing/paystack/webhook/` on the backend.
 - Register a domain and point it at the frontend service in Render.
 - Create a company mailbox, then set `PUBLIC_EMAIL` so the address returns
   to the site and the signature.

@@ -10,3 +10,6 @@ whitenoise>=6.9,<7
 # Managed Postgres on Render
 dj-database-url>=3.0,<4
 psycopg[binary]>=3.2,<4
+
+# PayGate handshake
+requests>=2.32,<3
