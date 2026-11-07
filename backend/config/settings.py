@@ -72,10 +72,16 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-    # Render serves everything over HTTPS. The redirect is safe here because
-    # SECURE_PROXY_SSL_HEADER above lets Django recognise already-secure
-    # requests, so this cannot loop.
-    SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
+    # Off by default, and that is deliberate.
+    #
+    # Render's edge already redirects http to https for public traffic, so this
+    # adds nothing there. What it does break is internal traffic: the Next.js
+    # server reaches this API over plain http on the private network, with no
+    # X-Forwarded-Proto header, so Django would see an insecure request and
+    # answer 301 to https://orbit-backend:10000/, which speaks no TLS. The
+    # proxy then fails and every API call returns 500. Render's own health
+    # check arrives the same way, so the service would never come up either.
+    SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
 
     # Tell browsers to use HTTPS for this host from now on. Start at one hour.
     # Raise it to 31536000 once you are confident, because browsers remember
