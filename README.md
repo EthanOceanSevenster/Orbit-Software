@@ -1,1 +1,223 @@
-# Orbit-Software
+# Software Company Website
+
+Marketing website for a software company that designs, builds and hosts websites for businesses.
+
+- **Frontend:** Next.js 16 (App Router, TypeScript, Tailwind CSS 4) in `frontend/`
+- **Backend:** Django 6 + Django REST Framework in `backend/`
+
+Pricing:
+
+| Item | Price |
+| --- | --- |
+| Website design and build | **R500** once-off |
+| Managed hosting, SSL, backups and support | **R120** / month |
+| Business email on your own domain (optional) | **R50** / month |
+
+Hosting plus the business email comes to R170 a month. Prices are editable in the
+Django admin under Plans and Add-ons; the values in `frontend/src/lib/site.ts`
+are only the fallback used when the API is unreachable.
+
+Online payments (PayGate) are planned but not wired up yet; see "Next steps".
+
+## Project layout
+
+```
+frontend/   Next.js site (pages, components, editable copy)
+backend/    Django API + admin (plans, contact inquiries, project requests)
+brand/      Email signature and brand assets
+BRAND.md    Brand guide: colours, type, icons, layout, motion
+```
+
+## Brand
+
+[BRAND.md](BRAND.md) is the reference for colours, typography, icons, spacing
+and motion. New work follows it rather than inventing a new style.
+
+The email signature lives in [brand/signature/](brand/signature/). Open
+`preview.html` in a browser, fill in your details, press **Copy signature** and
+paste it into Gmail. Install steps are on the page.
+
+To see it as a real email first:
+
+```powershell
+cd backend
+.venv\Scripts\python manage.py send_signature
+```
+
+Django fills the placeholders from `SIGNATURE_NAME`, `SIGNATURE_ROLE`,
+`COMPANY_PHONE` and `COMPANY_WEBSITE` in `backend/.env`, reading the markup
+straight from `brand/signature/` so there is only ever one copy to maintain.
+
+### Backend API
+
+| Method | Path                      | Purpose                                   |
+| ------ | ------------------------- | ----------------------------------------- |
+| GET    | `/api/health/`            | Health check                              |
+| GET    | `/api/plans/`             | Active pricing plans (public)             |
+| GET    | `/api/plans/<slug>/`      | One plan                                  |
+| GET    | `/api/addons/`            | Active optional extras (public)           |
+| POST   | `/api/contact/`           | Contact form submission                   |
+| POST   | `/api/project-requests/`  | "Get started" form submission             |
+
+Plans, inquiries and requests are managed in the Django admin at `/admin/`.
+Form endpoints are rate-limited per IP (default 20/hour) and send an email notification
+if `NOTIFY_EMAIL` is set.
+
+## Running locally
+
+### 1. Backend (Django)
+
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+python manage.py migrate
+python manage.py seed_plans          # creates the plan and the add-on
+python manage.py createsuperuser     # for /admin/
+python manage.py runserver           # http://localhost:8000
+```
+
+### 2. Frontend (Next.js)
+
+```powershell
+cd frontend
+npm install
+copy .env.example .env.local
+npm run dev                          # http://localhost:3000
+```
+
+The site works without the backend running (pricing falls back to static values), but the
+contact and get-started forms need the API to accept submissions.
+
+### Tests
+
+```powershell
+cd backend
+.venv\Scripts\python manage.py test
+```
+
+```powershell
+cd frontend
+npm run lint
+npm run build
+```
+
+## Editing content
+
+| What                                   | Where                                   |
+| -------------------------------------- | --------------------------------------- |
+| Company name, email, prices (fallback) | `frontend/src/lib/site.ts`              |
+| Services, steps, FAQ, fallback plan    | `frontend/src/lib/content.ts`           |
+| Live prices shown on the site          | Django admin → Plans and Add-ons        |
+| Theme colours                          | `frontend/src/app/globals.css`          |
+
+The public email is blank, so every enquiry comes through the contact form. Fill in
+`publicEmail` in `site.ts` and `PUBLIC_EMAIL` in `backend/.env` when a company
+mailbox exists.
+
+**If a form submission does not arrive, restart the Django server.** It reads
+`.env` once at startup, so a server left running across a config change keeps the
+old values. The server log now says `Notification email sent to ...` on every
+success, which makes this easy to confirm.
+
+## Environment variables
+
+**backend/.env** (see `backend/.env.example`): `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`,
+`DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `NOTIFY_EMAIL`, SMTP settings.
+
+**frontend/.env.local** (see `frontend/.env.example`): `NEXT_PUBLIC_API_URL`,
+`NEXT_PUBLIC_SITE_URL`, optional `API_URL` for server-side requests.
+
+## Privacy: two separate addresses
+
+The owner does not want the business traced back to them personally, so the site
+carries **no personal name and no phone number anywhere**. A test in
+`backend/core/tests.py` fails if a name, job title or `tel:` link appears in the
+signature.
+
+| Setting | Visibility | Purpose |
+| --- | --- | --- |
+| `PUBLIC_EMAIL` | Shown on the site and in the signature | Blank for now. Must be a company address |
+| `NOTIFY_EMAIL` | Private, never rendered | Receives form submissions |
+
+`PUBLIC_EMAIL` is **deliberately blank**. There is no company mailbox yet, and a
+published address that bounces is worse than none. While it is empty:
+
+- the website shows a "Send us a message" link to the contact form instead of an address
+- the email signature drops its email row entirely
+
+Set `PUBLIC_EMAIL` in `backend/.env` and `publicEmail` in
+`frontend/src/lib/site.ts` once a real company mailbox exists, and both come
+back automatically.
+
+The contact form is the safest channel for visitors, because it exposes no
+address at all.
+
+> **Still to do.** Gmail forces the *sending* address to be the authenticated
+> account, so outgoing mail currently reads
+> `Orbit Software <the personal Gmail>`. The display name is the company, but the
+> raw address is still visible to anyone who looks. To close that gap, create a
+> neutral mailbox (a company Gmail, or `hello@` once the domain is registered)
+> and point `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` and `NOTIFY_EMAIL` at it.
+> Nothing else needs to change.
+
+## Email notifications (Gmail)
+
+Contact and get-started submissions are emailed to `NOTIFY_EMAIL`, which is already
+set in `backend/.env`. That file is gitignored, so the address never reaches the repo.
+
+Gmail will not accept your normal account password over SMTP. You need an **App
+Password**, which requires 2-Step Verification on the Google account:
+
+1. Turn on 2-Step Verification at <https://myaccount.google.com/security>.
+2. Create an App Password at <https://myaccount.google.com/apppasswords>
+   (choose "Mail", then any device name).
+3. Paste the 16-character password into `backend/.env`:
+
+   ```
+   EMAIL_HOST_PASSWORD=abcd efgh ijkl mnop
+   ```
+
+4. Restart the Django server and send a test message:
+
+   ```powershell
+   cd backend
+   .venv\Scripts\python manage.py test_email
+   ```
+
+While `EMAIL_HOST_PASSWORD` is empty, emails are printed to the Django console
+instead of being sent, so the forms keep working either way. A mail failure is
+logged and never breaks a form submission for the visitor.
+
+### How emails appear
+
+Emails the site sends arrive as **Orbit Software**, not as a bare Gmail address.
+Gmail requires the underlying address to stay the authenticated account, so only
+the display name changes:
+
+```
+From: Orbit Software <your-sending-address>
+```
+
+Change the name with `COMPANY_NAME` in `backend/.env`.
+
+Notification emails also set `Reply-To` to the person who filled in the form, so
+pressing Reply answers the customer rather than yourself.
+
+**Replies you type by hand in Gmail still show your own Gmail profile name.**
+That is a Gmail account setting, not something this project controls. To change
+it, open Gmail Settings, then "Accounts and Import", then "Send mail as", and
+edit the name on your address.
+
+The address shown publicly on the website is separate, and lives in
+`frontend/src/lib/site.ts`. Change it there if you would rather display a
+business address than your personal Gmail.
+
+## Next steps
+
+- **PayGate:** add a `payments` app in Django (transaction model, initiate + notify/return
+  endpoints) and a checkout step after the get-started form.
+- Swap SQLite for Postgres in production.
+- Set `DJANGO_DEBUG=false`, a real `DJANGO_SECRET_KEY` and production hosts/origins before deploying.
