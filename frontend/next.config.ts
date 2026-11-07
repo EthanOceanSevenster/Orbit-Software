@@ -3,10 +3,14 @@ import type { NextConfig } from "next";
 /**
  * Where the Django API lives, as seen from the Next.js server.
  *
- * On Render this is the backend's address on the private network, injected by
- * `render.yaml` as `API_URL`. Render supplies it as `host:port` with no scheme,
- * so the scheme is added here when it is missing. Locally it falls back to the
- * dev server on port 8000.
+ * On Render this is the backend's public https URL, injected by `render.yaml`
+ * as `API_URL`. Render's free instances cannot receive private network traffic,
+ * so the private host:port address is not usable there. A bare `host:port` is
+ * still accepted and gets an http scheme, which is what a paid private-network
+ * setup would supply. Locally it falls back to the dev server on port 8000.
+ *
+ * Only this server reads it. The browser never sees it, so the site stays on a
+ * single origin either way.
  */
 function backendOrigin(): string {
   const raw = (process.env.API_URL ?? "http://localhost:8000").trim();

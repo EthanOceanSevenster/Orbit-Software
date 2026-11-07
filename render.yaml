@@ -5,9 +5,9 @@
 # the whole stack is defined here rather than clicked together in the dashboard.
 #
 # Routing: only the Next.js service is meant to be visited. It proxies /api/*
-# to Django over Render's private network (see frontend/next.config.ts), so the
-# browser stays on one origin and no CORS headers are involved. The Django
-# service keeps its own URL as well, which is how you reach /admin/.
+# through to Django (see frontend/next.config.ts), so the browser stays on one
+# origin and no CORS headers are involved. The Django service keeps its own URL
+# as well, which is how you reach /admin/ and how the proxy reaches it.
 #
 # Values marked `sync: false` are not stored in the repository. Render prompts
 # for them on first deploy, which is where the Gmail app password belongs.
@@ -141,14 +141,18 @@ services:
       - key: NODE_VERSION
         value: "22"
 
-      # The backend's address on Render's private network, as host:port. The
-      # Next.js server adds the scheme. This never leaves the server, so the
-      # API is reachable without being exposed under a second public origin.
+      # Where the Next.js server reaches Django. Only the server uses this, so
+      # the browser still talks to one origin and no CORS is involved.
+      #
+      # This is the backend's PUBLIC https URL, not its private-network
+      # host:port, and that is deliberate. Render's free instances can send
+      # private network traffic but cannot receive it, so a proxy call to
+      # orbit-backend:10000 fails immediately with a 500. The public URL works
+      # on every plan and carries TLS on the server-to-server hop as well.
+      #
+      # Change this if the backend is ever recreated under a different URL.
       - key: API_URL
-        fromService:
-          type: web
-          name: orbit-backend
-          property: hostport
+        value: https://orbit-backend-eek6.onrender.com
 
       # Blank on purpose: the browser posts to /api/* on this same origin,
       # which next.config.ts proxies through to Django.
