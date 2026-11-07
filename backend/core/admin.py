@@ -12,6 +12,7 @@ from .models import (
     Payment,
     Plan,
     ProjectRequest,
+    ServiceRequest,
 )
 
 
@@ -227,4 +228,29 @@ class PaymentAdmin(admin.ModelAdmin):
     readonly_fields = tuple(f.name for f in Payment._meta.fields)
 
     def has_add_permission(self, request):
+        return False
+
+
+@admin.register(ServiceRequest)
+class ServiceRequestAdmin(admin.ModelAdmin):
+    """Extra work clients have asked for from inside the portal.
+
+    The client sees the status, so changing it here is how you tell them where
+    their request stands. ``internal_notes`` is never serialised to them.
+    """
+
+    list_display = ("account", "service", "status", "created_at")
+    list_filter = ("status", "service", "created_at")
+    list_editable = ("status",)
+    search_fields = ("account__company_name", "account__user__email", "details")
+    readonly_fields = ("account", "service", "details", "created_at", "updated_at")
+    date_hierarchy = "created_at"
+
+    fieldsets = (
+        ("The request", {"fields": ("account", "service", "details", "created_at")}),
+        ("Where it stands", {"fields": ("status", "internal_notes")}),
+    )
+
+    def has_add_permission(self, request):
+        # These are raised by clients in the portal, never typed in here.
         return False

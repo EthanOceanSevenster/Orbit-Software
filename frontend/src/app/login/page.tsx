@@ -38,10 +38,11 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Not a client yet?{" "}
-            <Link href="/get-started" className="font-semibold text-brand-ink hover:underline">
-              Get started
-            </Link>
+            No profile yet?{" "}
+            <Link href="/register" className="font-semibold text-brand-ink hover:underline">
+              Create one
+            </Link>{" "}
+            and tell us what you need.
           </p>
           <p className="mt-2 text-center text-sm text-muted-foreground">
             Lost your password?{" "}

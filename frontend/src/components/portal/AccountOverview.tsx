@@ -16,7 +16,8 @@ import { Container } from "@/components/Container";
 import { IconBadge } from "@/components/IconTile";
 import { InvoiceList } from "@/components/portal/InvoiceList";
 import { LogoutButton } from "@/components/portal/LogoutButton";
-import { fetchMyAccount, fetchMyInvoices } from "@/lib/portal";
+import { ServiceRequestPanel } from "@/components/portal/ServiceRequestPanel";
+import { fetchMyAccount, fetchMyInvoices, fetchMyServiceRequests } from "@/lib/portal";
 import { formatMoney } from "@/lib/site";
 
 function formatDate(value?: string | null): string {
@@ -58,11 +59,20 @@ export async function AccountOverview() {
     );
   }
 
-  const invoicesResult = await fetchMyInvoices();
+  const [invoicesResult, requestsResult] = await Promise.all([
+    fetchMyInvoices(),
+    fetchMyServiceRequests(),
+  ]);
   const invoices = invoicesResult.ok ? invoicesResult.data : [];
+  const requests = requestsResult.ok ? requestsResult.data : [];
   const currency = account.currency ?? "ZAR";
   const monthly = account.monthly_total ?? "0";
   const isActive = account.status === "active";
+  // A profile somebody created themselves. There is no plan yet, so the
+  // billing figures would all read zero and the services list would be empty.
+  // Lead with what to do next instead.
+  const isPending = account.status === "pending";
+  const services = account.services ?? [];
 
   return (
     <>
@@ -99,22 +109,47 @@ export async function AccountOverview() {
 
       <section className="bg-muted py-12 sm:py-16">
         <Container className="space-y-6">
+          {isPending ? (
+            <div className="rounded-2xl border border-sky-500/30 bg-sky-500/5 p-7 sm:p-8">
+              <h2 className="text-lg font-semibold">Welcome. Your profile is ready.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                There is nothing to pay yet. Tell us what you need below and we will
+                come back to you with a quote. Once you are happy, we set the work up
+                here and your billing appears on this page.
+              </p>
+            </div>
+          ) : null}
+
           {/* The three things they asked to see */}
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="rounded-2xl border border-border bg-card p-7">
               <IconBadge icon={CalendarClock} />
               <p className="mt-6 text-sm text-muted-foreground">Next payment</p>
-              <p className="mt-1 text-4xl font-semibold tracking-tight">
-                {formatMoney(monthly, currency)}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Due {formatDate(account.next_payment_date)}
-              </p>
-              <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">
-                {account.plan_name
-                  ? `${account.plan_name}, billed monthly`
-                  : "Billed monthly"}
-              </p>
+              {isPending ? (
+                <>
+                  <p className="mt-1 text-4xl font-semibold tracking-tight">Nothing yet</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    You pay once we have agreed on the work.
+                  </p>
+                  <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">
+                    No plan on this profile yet
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 text-4xl font-semibold tracking-tight">
+                    {formatMoney(monthly, currency)}
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Due {formatDate(account.next_payment_date)}
+                  </p>
+                  <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">
+                    {account.plan_name
+                      ? `${account.plan_name}, billed monthly`
+                      : "Billed monthly"}
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="rounded-2xl border border-border bg-card p-7">
@@ -163,19 +198,29 @@ export async function AccountOverview() {
           </div>
 
           {/* Services */}
-          <div className="rounded-2xl border border-border bg-card p-7 sm:p-8">
-            <h2 className="text-lg font-semibold">What your plan covers</h2>
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {(account.services ?? []).map((service) => (
-                <li key={service} className="flex items-start gap-3 text-sm">
-                  <CircleCheck
-                    className="mt-0.5 h-4 w-4 shrink-0 text-brand-ink"
-                    aria-hidden="true"
-                  />
-                  <span>{service}</span>
-                </li>
-              ))}
-            </ul>
+          {services.length > 0 ? (
+            <div className="rounded-2xl border border-border bg-card p-7 sm:p-8">
+              <h2 className="text-lg font-semibold">What your plan covers</h2>
+              <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {services.map((service) => (
+                  <li key={service} className="flex items-start gap-3 text-sm">
+                    <CircleCheck
+                      className="mt-0.5 h-4 w-4 shrink-0 text-brand-ink"
+                      aria-hidden="true"
+                    />
+                    <span>{service}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {/* Asking us for more work */}
+          <div id="request" className="scroll-mt-28">
+            <ServiceRequestPanel
+              requests={requests}
+              openByDefault={isPending && requests.length === 0}
+            />
           </div>
 
           {/* Billing */}
@@ -201,11 +246,11 @@ export async function AccountOverview() {
                 <p className="mt-3 leading-relaxed text-slate-300">
                   We build live dashboards that pull your business numbers onto one
                   screen, and we can run the marketing that brings people to your site.
-                  Tell us what you are after and we will put together a quote.
+                  Send it through from this page and we will put together a quote.
                 </p>
               </div>
-              <ButtonLink href="/contact" variant="inverse" size="lg" className="shrink-0">
-                Talk to us <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              <ButtonLink href="#request" variant="inverse" size="lg" className="shrink-0">
+                Request it <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </ButtonLink>
             </div>
           </div>

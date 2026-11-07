@@ -241,20 +241,13 @@ export function Header() {
 
           <div className="hidden items-center gap-2 lg:flex">
             <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <LogIn className="h-4 w-4" aria-hidden="true" />
-              Client login
-            </Link>
-            <Link
               href="/contact"
               className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
             >
               Contact sales
             </Link>
-            <ButtonLink href="/get-started" size="sm" className="shadow-lg shadow-brand/30">
-              Get started <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <ButtonLink href="/login" size="sm" className="shadow-lg shadow-brand/30">
+              <LogIn className="h-4 w-4" aria-hidden="true" /> Sign in
             </ButtonLink>
           </div>
 
@@ -315,15 +308,15 @@ export function Header() {
               ))}
             </ul>
             <Link
-              href="/login"
+              href="/contact"
               onClick={closeAll}
               className="mt-4 flex items-center gap-3 rounded-md border-t border-white/10 px-3 pt-4 text-base font-medium text-slate-300 hover:text-white"
             >
-              <LogIn className="h-5 w-5 text-sky-300" aria-hidden="true" />
-              Client login
+              <Mail className="h-5 w-5 text-sky-300" aria-hidden="true" />
+              Contact sales
             </Link>
-            <ButtonLink href="/get-started" className="mt-5 w-full" onClick={closeAll}>
-              Get started <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <ButtonLink href="/login" className="mt-5 w-full" onClick={closeAll}>
+              <LogIn className="h-4 w-4" aria-hidden="true" /> Sign in
             </ButtonLink>
           </nav>
         ) : null}

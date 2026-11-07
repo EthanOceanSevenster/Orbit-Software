@@ -289,7 +289,24 @@ on Render, including the same-origin proxy.
 Clients sign in at `/login` and see their next payment, their live site, what
 their plan covers, their invoices and a Pay now button.
 
-### Creating a client login
+### How someone gets a profile
+
+**They sign themselves up.** The header's **Sign in** button leads to the login
+page, and from there to `/register`. That creates a login and an account marked
+**Pending setup**: no plan, no fees, nothing to pay. All it buys them is a place
+to talk to us from. You get an email about every sign-up.
+
+Nothing a visitor sends can change that. The registration form accepts a name,
+an email, a business name and a password, and no other field is read, so there
+is no way to arrive already on a plan or already active. Give them a plan in the
+admin when you are ready and the billing appears on their page.
+
+**They ask for work from their own page.** Signed in, a client picks a service
+and describes what they want. It lands in **Service requests** in the admin.
+Changing the status there is how you tell them where it stands, because they see
+that status on their page. `internal_notes` is yours and is never sent to them.
+
+### Creating a client login yourself
 
 **Through the admin, no shell needed.** Render's free plan has no shell, so the
 admin page does the whole job. Sign in at `/admin/`, open **Client accounts**,

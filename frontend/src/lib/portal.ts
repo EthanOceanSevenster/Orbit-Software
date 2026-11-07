@@ -6,7 +6,7 @@
  */
 import { cookies } from "next/headers";
 
-import type { ClientAccount, Invoice } from "@/lib/types";
+import type { ClientAccount, Invoice, ServiceRequest } from "@/lib/types";
 
 const API_URL = (() => {
   const raw = (
@@ -46,4 +46,8 @@ export function fetchMyAccount(): Promise<Result<ClientAccount>> {
 
 export function fetchMyInvoices(): Promise<Result<Invoice[]>> {
   return getAsUser<Invoice[]>("/api/billing/invoices/");
+}
+
+export function fetchMyServiceRequests(): Promise<Result<ServiceRequest[]>> {
+  return getAsUser<ServiceRequest[]>("/api/service-requests/");
 }

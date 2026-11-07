@@ -132,6 +132,9 @@ class ClientAccount(TimeStampedModel):
     """
 
     class Status(models.TextChoices):
+        # Someone who signed themselves up on the website. They have a login
+        # and can ask for work, but there is no plan and nothing to pay yet.
+        PENDING = "pending", "Pending setup"
         ACTIVE = "active", "Active"
         PAUSED = "paused", "Paused"
         CANCELLED = "cancelled", "Cancelled"
@@ -272,3 +275,47 @@ class Payment(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.provider} {self.get_status_display()} for {self.invoice.number}"
+
+
+class ServiceRequest(TimeStampedModel):
+    """Extra work a signed-in client has asked for from inside the portal.
+
+    Separate from ``ProjectRequest``, which is the public form a stranger fills
+    in. This one always belongs to an account, so there is no name or email to
+    collect and no way to raise it on somebody else's behalf.
+    """
+
+    class Service(models.TextChoices):
+        WEBSITE = "website", "A website"
+        REDESIGN = "redesign", "Website redesign"
+        DASHBOARD = "dashboard", "Live dashboard"
+        MARKETING = "marketing", "Marketing"
+        ECOMMERCE = "ecommerce", "Online shop"
+        SEO = "seo", "SEO and search"
+        BUSINESS_EMAIL = "business_email", "Business email address"
+        SUPPORT = "support", "Changes to my current site"
+        OTHER = "other", "Something else"
+
+    class Status(models.TextChoices):
+        NEW = "new", "Received"
+        QUOTED = "quoted", "Quoted"
+        ACCEPTED = "accepted", "In progress"
+        DECLINED = "declined", "Declined"
+        DONE = "done", "Done"
+
+    account = models.ForeignKey(
+        ClientAccount, on_delete=models.CASCADE, related_name="service_requests"
+    )
+    service = models.CharField(max_length=20, choices=Service.choices)
+    details = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
+    internal_notes = models.TextField(
+        blank=True, help_text="Internal. Never shown to the client."
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "service request"
+
+    def __str__(self) -> str:
+        return f"{self.get_service_display()} for {self.account.company_name}"

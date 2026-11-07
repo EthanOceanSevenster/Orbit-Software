@@ -1,14 +1,21 @@
 from django.urls import path
 
-from . import auth_views, billing_views, views
+from . import auth_views, billing_views, service_views, views
 
 urlpatterns = [
     path("health/", views.health, name="health"),
     # Client portal session auth
     path("auth/csrf/", auth_views.CsrfView.as_view(), name="auth-csrf"),
     path("auth/login/", auth_views.LoginView.as_view(), name="auth-login"),
+    path("auth/register/", auth_views.RegisterView.as_view(), name="auth-register"),
     path("auth/logout/", auth_views.LogoutView.as_view(), name="auth-logout"),
     path("auth/me/", auth_views.MeView.as_view(), name="auth-me"),
+    # Extra work a signed-in client asks for
+    path(
+        "service-requests/",
+        service_views.ServiceRequestListCreateView.as_view(),
+        name="service-request-list",
+    ),
     # Billing
     path("billing/invoices/", billing_views.InvoiceListView.as_view(), name="invoice-list"),
     path(

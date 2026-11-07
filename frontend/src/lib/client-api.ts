@@ -19,7 +19,8 @@ export type PostResult =
   | { ok: true }
   | { ok: false; message: string; fieldErrors: FieldErrors };
 
-function normaliseErrors(data: unknown): FieldErrors {
+/** Turns DRF's `{field: [messages]}` body into something the forms can read. */
+export function normaliseErrors(data: unknown): FieldErrors {
   if (!data || typeof data !== "object") return {};
   const out: FieldErrors = {};
   for (const [key, value] of Object.entries(data as Record<string, unknown>)) {

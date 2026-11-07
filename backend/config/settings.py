@@ -209,6 +209,11 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "form-submit": os.getenv("API_FORM_THROTTLE", "20/hour"),
         "login": os.getenv("API_LOGIN_THROTTLE", "10/hour"),
+        # Sign-up has to say whether an address is already taken, so the limit
+        # is what keeps that from being used to test a list of addresses.
+        "register": os.getenv("API_REGISTER_THROTTLE", "5/hour"),
+        # Per signed-in account, not per IP.
+        "service-request": os.getenv("API_SERVICE_REQUEST_THROTTLE", "20/day"),
     },
 }
 

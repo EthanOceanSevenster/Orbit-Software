@@ -7,7 +7,7 @@
  * changes state. Fetch the token once, then send it back in the X-CSRFToken
  * header. The session cookie itself is httpOnly, so it is never touched here.
  */
-import { PUBLIC_API_URL } from "@/lib/client-api";
+import { normaliseErrors, PUBLIC_API_URL, type FieldErrors } from "@/lib/client-api";
 
 function readCookie(name: string): string {
   // Split rather than build a regex. A previous version interpolated the name
@@ -92,5 +92,99 @@ export async function startPayment(invoiceId: number): Promise<PayResult> {
     };
   } catch {
     return { ok: false, message: "We could not reach the server. Check your connection." };
+  }
+}
+
+export type RegisterInput = {
+  name: string;
+  email: string;
+  company_name: string;
+  password: string;
+};
+
+export type RegisterResult =
+  | { ok: true }
+  | { ok: false; message: string; fieldErrors: FieldErrors };
+
+/** Creates a login and an empty, pending account, then signs them in. */
+export async function register(input: RegisterInput): Promise<RegisterResult> {
+  try {
+    const res = await post("/api/auth/register/", input);
+    if (res.ok) return { ok: true };
+
+    if (res.status === 400) {
+      const data = await res.json().catch(() => ({}));
+      const fieldErrors = normaliseErrors(data);
+      const general = fieldErrors.non_field_errors?.[0] ?? fieldErrors.detail?.[0];
+      return {
+        ok: false,
+        message: general ?? "Please check the highlighted fields and try again.",
+        fieldErrors,
+      };
+    }
+    if (res.status === 429) {
+      return {
+        ok: false,
+        message: "Too many sign-ups from this network. Please try again later.",
+        fieldErrors: {},
+      };
+    }
+    return {
+      ok: false,
+      message: "Something went wrong on our side. Please try again.",
+      fieldErrors: {},
+    };
+  } catch {
+    return {
+      ok: false,
+      message: "We could not reach the server. Check your connection.",
+      fieldErrors: {},
+    };
+  }
+}
+
+export type ServiceRequestResult =
+  | { ok: true }
+  | { ok: false; message: string; fieldErrors: FieldErrors };
+
+/** Asks us for a piece of extra work. The account comes from the session. */
+export async function requestService(
+  service: string,
+  details: string,
+): Promise<ServiceRequestResult> {
+  try {
+    const res = await post("/api/service-requests/", { service, details });
+    if (res.ok) return { ok: true };
+
+    if (res.status === 400) {
+      const data = await res.json().catch(() => ({}));
+      const fieldErrors = normaliseErrors(data);
+      return {
+        ok: false,
+        message:
+          fieldErrors.non_field_errors?.[0] ??
+          "Please check the highlighted fields and try again.",
+        fieldErrors,
+      };
+    }
+    if (res.status === 429) {
+      return {
+        ok: false,
+        message: "You have sent a few of these already. Please give us a day to reply.",
+        fieldErrors: {},
+      };
+    }
+    const data = (await res.json().catch(() => ({}))) as { detail?: string };
+    return {
+      ok: false,
+      message: data.detail ?? "We could not send that request. Please try again.",
+      fieldErrors: {},
+    };
+  } catch {
+    return {
+      ok: false,
+      message: "We could not reach the server. Check your connection.",
+      fieldErrors: {},
+    };
   }
 }
