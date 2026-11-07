@@ -288,9 +288,24 @@ PORTAL_URL = os.getenv("PORTAL_URL", "http://localhost:3000").rstrip("/")
 # Django emails all use one source. It is company-only: no name, role or phone.
 SIGNATURE_DIR = BASE_DIR.parent / "brand" / "signature"
 
-# Only switch to SMTP once a password is present. Without it, Gmail refuses the
-# login and every notification would fail, so we stay on the console backend.
-if os.getenv("EMAIL_HOST") and os.getenv("EMAIL_HOST_PASSWORD"):
+# How mail leaves, in order of preference.
+#
+# Resend first, because it goes over HTTPS. Render's free web services block
+# outbound traffic to the SMTP ports, so on the live site SMTP does not fail,
+# it hangs, and no Gmail password can change that. Then SMTP, for a paid
+# instance or a laptop. Then the console, so development never needs either.
+# Not called EMAIL_TIMEOUT: Django 6 refuses to start when a deprecated
+# EMAIL_* setting is defined alongside MAILERS.
+MAIL_TIMEOUT_SECONDS = int(os.getenv("MAIL_TIMEOUT_SECONDS", "10"))
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+
+if RESEND_API_KEY:
+    MAILERS = {
+        "default": {
+            "BACKEND": "core.mail_backends.ResendBackend",
+        },
+    }
+elif os.getenv("EMAIL_HOST") and os.getenv("EMAIL_HOST_PASSWORD"):
     MAILERS = {
         "default": {
             "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
@@ -300,6 +315,11 @@ if os.getenv("EMAIL_HOST") and os.getenv("EMAIL_HOST_PASSWORD"):
                 "username": os.getenv("EMAIL_HOST_USER", ""),
                 "password": os.getenv("EMAIL_HOST_PASSWORD", ""),
                 "use_tls": env_bool("EMAIL_USE_TLS", True),
+                # Without this the socket waits on the operating system's own
+                # timeout, which is minutes. Render's free web services block
+                # outbound SMTP entirely, so the connection never completes and
+                # the request would sit there until gunicorn killed the worker.
+                "timeout": MAIL_TIMEOUT_SECONDS,
             },
         },
     }

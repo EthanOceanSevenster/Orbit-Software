@@ -72,7 +72,24 @@ services:
       - key: NOTIFY_EMAIL
         sync: false
 
-      # Gmail SMTP. The password must be a Google App Password.
+      # How notification email leaves this service.
+      #
+      # Render's free web services block outbound traffic to the SMTP ports,
+      # so Gmail is unreachable here no matter what the password is: the
+      # connection hangs rather than failing. Resend goes over HTTPS, which is
+      # not blocked, and is what makes mail work on the free plan.
+      #
+      # Set RESEND_API_KEY and DEFAULT_FROM_EMAIL together. Until a domain is
+      # verified, the From address has to be Resend's onboarding sender, for
+      # example: Orbit Software <onboarding@resend.dev>
+      - key: RESEND_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+
+      # Gmail SMTP. Used only when RESEND_API_KEY is empty, which on a free
+      # instance means mail that never arrives. The password must be a Google
+      # App Password.
       - key: EMAIL_HOST
         value: smtp.gmail.com
       - key: EMAIL_PORT

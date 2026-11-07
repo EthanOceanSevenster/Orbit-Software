@@ -164,10 +164,39 @@ address at all.
 > and point `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` and `NOTIFY_EMAIL` at it.
 > Nothing else needs to change.
 
-## Email notifications (Gmail)
+## Email notifications
 
 Contact and get-started submissions are emailed to `NOTIFY_EMAIL`, which is already
 set in `backend/.env`. That file is gitignored, so the address never reaches the repo.
+
+Sending happens off the request, so a slow or unreachable mail server never
+delays the visitor and never turns their submission into an error. The
+submission is saved first and is always in the admin, whatever the mail does.
+
+### On the live site: Resend, not Gmail
+
+Render's free web services block outbound traffic to the SMTP ports. Gmail is
+therefore unreachable from the live backend whatever the password is, and the
+connection hangs rather than failing. Resend goes over HTTPS, which is not
+blocked.
+
+1. Make a free account at <https://resend.com> and create an API key.
+2. On `orbit-backend` in Render, set:
+
+   ```
+   RESEND_API_KEY=re_...
+   DEFAULT_FROM_EMAIL=Orbit Software <onboarding@resend.dev>
+   ```
+
+Until a domain is verified, Resend only accepts its own onboarding sender and
+only delivers to the address the Resend account was opened with. That is exactly
+what a notification to our own inbox needs. Verify a domain later and the From
+address becomes a company one.
+
+`RESEND_API_KEY` wins over the SMTP settings when both are present, so there is
+nothing to remove.
+
+### Locally: Gmail over SMTP
 
 Gmail will not accept your normal account password over SMTP. You need an **App
 Password**, which requires 2-Step Verification on the Google account:
@@ -188,9 +217,10 @@ Password**, which requires 2-Step Verification on the Google account:
    .venv\Scripts\python manage.py test_email
    ```
 
-While `EMAIL_HOST_PASSWORD` is empty, emails are printed to the Django console
-instead of being sent, so the forms keep working either way. A mail failure is
-logged and never breaks a form submission for the visitor.
+While both `RESEND_API_KEY` and `EMAIL_HOST_PASSWORD` are empty, emails are
+printed to the Django console instead of being sent, so the forms keep working
+either way. A mail failure is logged and never breaks a form submission for the
+visitor.
 
 ### How emails appear
 
