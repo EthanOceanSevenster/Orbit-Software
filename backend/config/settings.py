@@ -45,6 +45,45 @@ if not SECRET_KEY:
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 
+# Render publishes the service's public hostname. Adding it automatically means
+# a deploy works without hand-editing DJANGO_ALLOWED_HOSTS for every new URL.
+RENDER_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME", "")
+if RENDER_HOSTNAME and RENDER_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_HOSTNAME)
+
+# On Render's private network a service is addressed by its own name, which is
+# how the Next.js server reaches this API. Without it, every proxied request
+# would be rejected with a DisallowedHost error.
+RENDER_SERVICE_NAME = os.getenv("RENDER_SERVICE_NAME", "")
+if RENDER_SERVICE_NAME and RENDER_SERVICE_NAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_SERVICE_NAME)
+
+# Render terminates TLS at its proxy and forwards plain HTTP, so Django has to
+# read the forwarded header to know the original request was secure. Without
+# this, admin login redirects in a loop behind HTTPS.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Admin login posts a form, so its origin must be trusted. Scheme is required.
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
+if RENDER_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOSTNAME}")
+
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    # Render serves everything over HTTPS. The redirect is safe here because
+    # SECURE_PROXY_SSL_HEADER above lets Django recognise already-secure
+    # requests, so this cannot loop.
+    SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
+
+    # Tell browsers to use HTTPS for this host from now on. Start at one hour.
+    # Raise it to 31536000 once you are confident, because browsers remember
+    # the longest value they have seen and it cannot easily be taken back.
+    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "3600"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", False)
+    SECURE_HSTS_PRELOAD = env_bool("SECURE_HSTS_PRELOAD", False)
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -62,6 +101,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Must come directly after SecurityMiddleware.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -90,15 +131,28 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # ---------------------------------------------------------------------------
-# Database (SQLite by default; swap for Postgres via DATABASE_URL-style vars later)
+# Database
 # ---------------------------------------------------------------------------
+# SQLite locally. In production DATABASE_URL points at the managed Postgres
+# instance, which Render injects from the database defined in render.yaml.
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if os.getenv("DATABASE_URL"):
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.config(
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=not DEBUG,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -124,6 +178,15 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# WhiteNoise serves the admin's CSS and JS straight from the app, so no separate
+# static host or CDN is needed.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
 
 # ---------------------------------------------------------------------------
 # REST framework

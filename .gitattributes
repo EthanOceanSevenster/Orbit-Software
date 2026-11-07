@@ -1,0 +1,6 @@
+# Normalise line endings so files behave the same on every machine.
+* text=auto
+
+# Render runs on Linux. A shell script committed with CRLF fails at the shebang
+# with "bad interpreter", so these must always be stored and checked out as LF.
+*.sh text eol=lf

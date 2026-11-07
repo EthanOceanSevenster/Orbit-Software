@@ -5,16 +5,28 @@
  */
 import type { AddOn, Plan } from "@/lib/types";
 
-const API_URL = (
-  process.env.API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:8000"
-).replace(/\/$/, "");
+/**
+ * On Render this is the backend's address on the private network, injected by
+ * `render.yaml` as `API_URL`. Render supplies it as `host:port` with no scheme,
+ * so the scheme is added when it is missing.
+ *
+ * Server Components talk to the backend directly rather than going out through
+ * the public URL and back in, which saves a round trip.
+ */
+const API_URL = (() => {
+  const raw = (
+    process.env.API_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    "http://localhost:8000"
+  ).trim();
+  const withScheme = /^https?:\/\//.test(raw) ? raw : `http://${raw}`;
+  return withScheme.replace(/\/$/, "");
+})();
 
 async function getList<T>(path: string): Promise<T[] | null> {
   try {
     const res = await fetch(`${API_URL}${path}`, {
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(5000),
       headers: { Accept: "application/json" },
     });
     if (!res.ok) return null;

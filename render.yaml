@@ -1,0 +1,131 @@
+# Render Blueprint for Orbit Software.
+#
+# Creates three resources: a Postgres database, the Django API, and the Next.js
+# site. Render reads this file when you point a Blueprint at the repository, so
+# the whole stack is defined here rather than clicked together in the dashboard.
+#
+# Routing: only the Next.js service is meant to be visited. It proxies /api/*
+# to Django over Render's private network (see frontend/next.config.ts), so the
+# browser stays on one origin and no CORS headers are involved. The Django
+# service keeps its own URL as well, which is how you reach /admin/.
+#
+# Values marked `sync: false` are not stored in the repository. Render prompts
+# for them on first deploy, which is where the Gmail app password belongs.
+
+databases:
+  - name: orbit-db
+    databaseName: orbit
+    user: orbit
+    plan: free
+    region: frankfurt
+
+services:
+  # ---------------------------------------------------------------------------
+  # Django API and admin
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: orbit-backend
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application --workers 2 --threads 4 --timeout 60
+    healthCheckPath: /api/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+
+      # Database, wired straight from the instance defined above.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: orbit-db
+          property: connectionString
+
+      # Render generates this once and keeps it. Never commit a secret key.
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_TIME_ZONE
+        value: Africa/Johannesburg
+
+      # .onrender.com covers the public URL, the bare service name covers the
+      # private network, and localhost covers Render's health checks.
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com,orbit-backend,localhost,127.0.0.1
+
+      # Public company identity. Leave PUBLIC_EMAIL blank until a company
+      # mailbox exists: the site and signature hide the row rather than show a
+      # dead address.
+      - key: COMPANY_NAME
+        value: Orbit Software
+      - key: COMPANY_LOCATION
+        value: South Africa
+      - key: PUBLIC_EMAIL
+        sync: false
+      - key: COMPANY_WEBSITE
+        sync: false
+
+      # Private. Where form submissions are emailed.
+      - key: NOTIFY_EMAIL
+        sync: false
+
+      # Gmail SMTP. The password must be a Google App Password.
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "true"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+
+      # Words the signature must never contain, such as a surname.
+      - key: SIGNATURE_FORBIDDEN_TERMS
+        sync: false
+
+      # Per-IP limit on public form submissions.
+      - key: API_FORM_THROTTLE
+        value: 20/hour
+
+      # Only needed if something calls the API from another origin. The site
+      # itself does not, because requests are proxied same-origin.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # Next.js site
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: orbit-frontend
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+
+      # The backend's address on Render's private network, as host:port. The
+      # Next.js server adds the scheme. This never leaves the server, so the
+      # API is reachable without being exposed under a second public origin.
+      - key: API_URL
+        fromService:
+          type: web
+          name: orbit-backend
+          property: hostport
+
+      # Blank on purpose: the browser posts to /api/* on this same origin,
+      # which next.config.ts proxies through to Django.
+      - key: NEXT_PUBLIC_API_URL
+        value: ""
+
+      # Used for metadata and Open Graph tags. Set this to the site's own URL.
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false

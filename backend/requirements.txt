@@ -2,3 +2,11 @@ Django>=6.1,<6.2
 djangorestframework>=3.18,<4
 django-cors-headers>=4.9,<5
 python-dotenv>=1.2,<2
+
+# Production serving
+gunicorn>=23.0,<24
+whitenoise>=6.9,<7
+
+# Managed Postgres on Render
+dj-database-url>=3.0,<4
+psycopg[binary]>=3.2,<4

@@ -1,9 +1,17 @@
 /**
  * Browser-side helper for posting forms to the Django API.
+ *
+ * Empty by default, which makes requests relative. In production the Next.js
+ * server proxies /api/* to Django (see next.config.ts), so the browser stays on
+ * one origin and no CORS headers are involved.
+ *
+ * Set NEXT_PUBLIC_API_URL only when the API is on a different origin, such as
+ * running the two dev servers side by side on different ports.
  */
-export const PUBLIC_API_URL = (
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
-).replace(/\/$/, "");
+export const PUBLIC_API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(
+  /\/$/,
+  "",
+);
 
 export type FieldErrors = Record<string, string[]>;
 
