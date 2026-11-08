@@ -22,6 +22,8 @@ export type AddOn = {
 
 export type ClientAccount = {
   has_account: boolean;
+  /** Whether this login is the owner's, and so may open the dashboard. */
+  is_staff?: boolean;
   name?: string;
   company_name?: string;
   website_url?: string;
@@ -71,3 +73,42 @@ export const SERVICE_OPTIONS: { value: string; label: string }[] = [
   { value: "support", label: "Changes to my current site" },
   { value: "other", label: "Something else" },
 ];
+
+/** One client as the owner sees them on the dashboard. */
+export type StaffClient = {
+  id: number;
+  company_name: string;
+  contact_name: string;
+  contact_email: string;
+  website_url: string;
+  plan_name: string;
+  monthly_total: string;
+  currency: string;
+  next_payment_date: string | null;
+  status: "pending" | "active" | "paused" | "cancelled";
+  status_label: string;
+  services: string[];
+  outstanding: string;
+  invoice_count: number;
+  open_requests: number;
+  created_at: string;
+};
+
+export type StaffServiceRequest = ServiceRequest & {
+  company_name: string;
+  contact_email: string;
+};
+
+export type StaffOverview = {
+  totals: {
+    clients: number;
+    by_status: Record<string, number>;
+    monthly_recurring: string;
+    outstanding: string;
+    overdue_invoices: number;
+    open_requests: number;
+    currency: string;
+  };
+  clients: StaffClient[];
+  requests: StaffServiceRequest[];
+};

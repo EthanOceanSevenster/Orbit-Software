@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import auth_views, billing_views, service_views, views
+from . import auth_views, billing_views, service_views, staff_views, views
 
 urlpatterns = [
     path("health/", views.health, name="health"),
@@ -10,6 +10,8 @@ urlpatterns = [
     path("auth/register/", auth_views.RegisterView.as_view(), name="auth-register"),
     path("auth/logout/", auth_views.LogoutView.as_view(), name="auth-logout"),
     path("auth/me/", auth_views.MeView.as_view(), name="auth-me"),
+    # The owner's dashboard. Staff only.
+    path("staff/overview/", staff_views.StaffOverviewView.as_view(), name="staff-overview"),
     # Extra work a signed-in client asks for
     path(
         "service-requests/",

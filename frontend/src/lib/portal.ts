@@ -6,7 +6,12 @@
  */
 import { cookies } from "next/headers";
 
-import type { ClientAccount, Invoice, ServiceRequest } from "@/lib/types";
+import type {
+  ClientAccount,
+  Invoice,
+  ServiceRequest,
+  StaffOverview,
+} from "@/lib/types";
 
 const API_URL = (() => {
   const raw = (
@@ -50,4 +55,9 @@ export function fetchMyInvoices(): Promise<Result<Invoice[]>> {
 
 export function fetchMyServiceRequests(): Promise<Result<ServiceRequest[]>> {
   return getAsUser<ServiceRequest[]>("/api/service-requests/");
+}
+
+/** The owner's dashboard. 403 for anyone who is not staff. */
+export function fetchStaffOverview(): Promise<Result<StaffOverview>> {
+  return getAsUser<StaffOverview>("/api/staff/overview/");
 }

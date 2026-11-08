@@ -204,3 +204,68 @@ class RegisterSerializer(serializers.Serializer):
         except DjangoValidationError as error:
             raise serializers.ValidationError({"password": list(error.messages)}) from error
         return attrs
+
+
+class StaffClientSerializer(serializers.ModelSerializer):
+    """One client as the owner sees them, for the dashboard.
+
+    Wider than ClientAccountSerializer, which is what a client sees about
+    themselves. This one carries the contact details and the money owed, and
+    is only ever served behind a staff-only permission.
+    """
+
+    contact_name = serializers.SerializerMethodField()
+    contact_email = serializers.CharField(source="user.email", read_only=True)
+    plan_name = serializers.CharField(source="plan.name", read_only=True, default="")
+    monthly_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    currency = serializers.CharField(read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    services = serializers.ListField(child=serializers.CharField(), read_only=True)
+    outstanding = serializers.SerializerMethodField()
+    invoice_count = serializers.SerializerMethodField()
+    open_requests = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ClientAccount
+        fields = [
+            "id",
+            "company_name",
+            "contact_name",
+            "contact_email",
+            "website_url",
+            "plan_name",
+            "monthly_total",
+            "currency",
+            "next_payment_date",
+            "status",
+            "status_label",
+            "services",
+            "outstanding",
+            "invoice_count",
+            "open_requests",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_contact_name(self, account) -> str:
+        return account.user.get_full_name() or account.user.get_username()
+
+    def get_outstanding(self, account) -> str:
+        # Annotated by the view so this is not a query per row.
+        return str(getattr(account, "outstanding_total", None) or "0.00")
+
+    def get_invoice_count(self, account) -> int:
+        return getattr(account, "invoice_total", 0)
+
+    def get_open_requests(self, account) -> int:
+        return getattr(account, "open_request_total", 0)
+
+
+class StaffServiceRequestSerializer(ServiceRequestSerializer):
+    """A service request with the client attached, for the owner's queue."""
+
+    company_name = serializers.CharField(source="account.company_name", read_only=True)
+    contact_email = serializers.CharField(source="account.user.email", read_only=True)
+
+    class Meta(ServiceRequestSerializer.Meta):
+        fields = ServiceRequestSerializer.Meta.fields + ["company_name", "contact_email"]

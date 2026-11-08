@@ -5,6 +5,7 @@ import {
   CircleCheck,
   ExternalLink,
   Globe,
+  LayoutDashboard,
   Megaphone,
   Receipt,
 } from "lucide-react";
@@ -40,6 +41,12 @@ export async function AccountOverview() {
   }
 
   const account = result.data;
+
+  // The owner's own login has no client account behind it, so this page would
+  // otherwise tell them to get in touch with themselves.
+  if (account.is_staff && !account.has_account) {
+    redirect("/dashboard");
+  }
 
   if (!account.has_account) {
     return (
@@ -102,7 +109,14 @@ export async function AccountOverview() {
                 {account.status_label}
               </span>
             </div>
-            <LogoutButton />
+            <div className="flex items-center gap-3">
+              {account.is_staff ? (
+                <ButtonLink href="/dashboard" variant="outlineInverse" size="sm">
+                  <LayoutDashboard className="h-4 w-4" aria-hidden="true" /> Dashboard
+                </ButtonLink>
+              ) : null}
+              <LogoutButton />
+            </div>
           </div>
         </Container>
       </section>

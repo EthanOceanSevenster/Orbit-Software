@@ -49,12 +49,19 @@ class LoginSerializer(serializers.Serializer):
 
 
 def _account_payload(user) -> dict:
+    # is_staff tells the website whether to offer the owner's dashboard. It is
+    # a hint for the interface only: the dashboard endpoint checks it again.
+    base = {"is_staff": bool(user.is_staff)}
     account = getattr(user, "client_account", None)
     if account is None:
-        return {"has_account": False, "name": user.get_full_name() or user.get_username()}
+        return {
+            **base,
+            "has_account": False,
+            "name": user.get_full_name() or user.get_username(),
+        }
     data = ClientAccountSerializer(account).data
     data["has_account"] = True
-    return data
+    return {**base, **data}
 
 
 @method_decorator(ensure_csrf_cookie, name="get")
