@@ -6,15 +6,15 @@ import type { ReactNode } from "react";
 /**
  * Decides whether a page gets the public site's header and footer.
  *
- * The owner's console has its own sidebar and chrome, so the marketing
- * navigation on top of it would be two navigations arguing. Everywhere else,
- * including the client portal, keeps the site's own header: a client signing
- * in is still on the website and may want to walk back into it.
+ * Both signed-in areas, the owner's console and the client portal, carry their
+ * own sidebar. Putting the marketing navigation above that gives two
+ * navigations arguing on one screen, and offers "Sign in" to somebody who
+ * plainly already has. Each sidebar has its own way back to the public site.
  *
  * The header and footer arrive as props rather than imports because they are
  * server components, and this one has to read the path.
  */
-const CONSOLE = "/dashboard";
+const SIGNED_IN_AREAS = ["/dashboard", "/account"];
 
 export function SiteChrome({
   header,
@@ -26,10 +26,12 @@ export function SiteChrome({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const isConsole = pathname === CONSOLE || pathname.startsWith(`${CONSOLE}/`);
+  const bare = SIGNED_IN_AREAS.some(
+    (area) => pathname === area || pathname.startsWith(`${area}/`),
+  );
 
-  // The console renders its own <main>, so this must not add a second one.
-  if (isConsole) return <>{children}</>;
+  // Those areas render their own <main>, so this must not add a second one.
+  if (bare) return <>{children}</>;
 
   return (
     <>

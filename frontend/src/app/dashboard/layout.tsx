@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { ConsoleShell } from "@/components/console/ConsoleShell";
+import { AppShell, type NavItem } from "@/components/app/AppShell";
 import { fetchStaffOverview } from "@/lib/portal";
 
 /**
@@ -30,13 +30,26 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const { totals } = result.data;
 
+  const items: NavItem[] = [
+    { href: "/dashboard", label: "Overview", icon: "overview", exact: true },
+    { href: "/dashboard/clients", label: "Clients", icon: "clients", badge: totals.clients },
+    {
+      href: "/dashboard/payments",
+      label: "Payments",
+      icon: "payments",
+      badge: totals.unpaid_invoices,
+    },
+    {
+      href: "/dashboard/requests",
+      label: "Requests",
+      icon: "requests",
+      badge: totals.open_requests,
+    },
+  ];
+
   return (
-    <ConsoleShell
-      clientCount={totals.clients}
-      openRequests={totals.open_requests}
-      unpaidInvoices={totals.unpaid_invoices}
-    >
+    <AppShell items={items} eyebrow="Dashboard">
       {children}
-    </ConsoleShell>
+    </AppShell>
   );
 }

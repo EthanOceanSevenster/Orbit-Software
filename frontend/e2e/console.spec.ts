@@ -10,6 +10,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 const OWNER = process.env.E2E_OWNER_EMAIL ?? "owner@orbit.local";
 const PASSWORD = process.env.E2E_OWNER_PASSWORD ?? "";
+const CLIENT = process.env.E2E_CLIENT_EMAIL ?? "";
+const CLIENT_PASSWORD = process.env.E2E_CLIENT_PASSWORD ?? "";
 
 const SIZES = [
   { name: "phone", width: 390, height: 844 },
@@ -17,12 +19,16 @@ const SIZES = [
   { name: "laptop", width: 1440, height: 900 },
 ];
 
-async function signIn(page: Page) {
+async function signInAs(page: Page, email: string, password: string, lands: string) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(OWNER);
-  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/dashboard**", { timeout: 20000 });
+  await page.waitForURL(`**${lands}**`, { timeout: 20000 });
+}
+
+async function signIn(page: Page) {
+  await signInAs(page, OWNER, PASSWORD, "/dashboard");
 }
 
 test.describe("signed out", () => {
@@ -119,6 +125,61 @@ test.describe("responsive", () => {
   test("the public pages fit a phone too", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     for (const path of ["/", "/services", "/pricing", "/contact", "/login", "/register"]) {
+      await page.goto(path);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, `${path} overflows by ${overflow}px`).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+// The client portal. Skipped unless a client login is supplied, so the suite
+// still runs on a database that has no clients in it yet.
+test.describe("the client portal", () => {
+  test.skip(
+    !CLIENT || !CLIENT_PASSWORD,
+    "set E2E_CLIENT_EMAIL and E2E_CLIENT_PASSWORD to run these",
+  );
+
+  test.beforeEach(async ({ page }) => {
+    await signInAs(page, CLIENT, CLIENT_PASSWORD, "/account");
+  });
+
+  test("has its own sidebar and none of the marketing chrome", async ({ page }) => {
+    await expect(page.getByRole("navigation", { name: "Your account" })).toBeVisible();
+    await expect(page.getByText("Website build from R500")).toHaveCount(0);
+    // A signed-in client being offered "Sign in" was the bug that started this.
+    await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
+  });
+
+  test("every page loads and names itself", async ({ page }) => {
+    for (const [path, heading] of [
+      ["/account/website", "My website"],
+      ["/account/services", "Services"],
+      ["/account/billing", "Billing"],
+      ["/account/support", "Support"],
+    ] as const) {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
+    }
+  });
+
+  test("a client cannot reach the owner's console", async ({ page }) => {
+    await page.goto("/dashboard");
+    await page.waitForURL("**/account**", { timeout: 20000 });
+    await expect(page.getByRole("navigation", { name: "Dashboard" })).toHaveCount(0);
+  });
+
+  test("fits a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const path of [
+      "/account",
+      "/account/website",
+      "/account/services",
+      "/account/billing",
+      "/account/support",
+    ]) {
       await page.goto(path);
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
