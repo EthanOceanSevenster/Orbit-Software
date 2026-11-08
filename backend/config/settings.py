@@ -208,10 +208,16 @@ REST_FRAMEWORK = {
     + (["rest_framework.renderers.BrowsableAPIRenderer"] if DEBUG else []),
     "DEFAULT_THROTTLE_RATES": {
         "form-submit": os.getenv("API_FORM_THROTTLE", "20/hour"),
-        "login": os.getenv("API_LOGIN_THROTTLE", "10/hour"),
+        # These count per IP address. In development every request, including
+        # the whole test suite and every reload, arrives from one address, so
+        # a production-sized limit locks the developer out of their own site.
+        # The limit that protects real accounts is the one below it.
+        "login": os.getenv("API_LOGIN_THROTTLE", "200/hour" if DEBUG else "10/hour"),
         # Sign-up has to say whether an address is already taken, so the limit
         # is what keeps that from being used to test a list of addresses.
-        "register": os.getenv("API_REGISTER_THROTTLE", "5/hour"),
+        "register": os.getenv(
+            "API_REGISTER_THROTTLE", "100/hour" if DEBUG else "5/hour"
+        ),
         # Per signed-in account, not per IP.
         "service-request": os.getenv("API_SERVICE_REQUEST_THROTTLE", "20/day"),
     },
