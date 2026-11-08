@@ -5,6 +5,7 @@
  * run on the server and forward the incoming cookie header to Django.
  */
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 import type {
   ClientAccount,
@@ -57,7 +58,13 @@ export function fetchMyServiceRequests(): Promise<Result<ServiceRequest[]>> {
   return getAsUser<ServiceRequest[]>("/api/service-requests/");
 }
 
-/** The owner's dashboard. 403 for anyone who is not staff. */
-export function fetchStaffOverview(): Promise<Result<StaffOverview>> {
-  return getAsUser<StaffOverview>("/api/staff/overview/");
-}
+/**
+ * The owner's dashboard. 403 for anyone who is not staff.
+ *
+ * Wrapped in cache() because the console layout and the page inside it both
+ * need it while rendering one request. Without this that is two identical
+ * round trips to the API for every page view.
+ */
+export const fetchStaffOverview = cache(
+  (): Promise<Result<StaffOverview>> => getAsUser<StaffOverview>("/api/staff/overview/"),
+);

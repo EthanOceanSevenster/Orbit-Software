@@ -99,6 +99,22 @@ export type StaffServiceRequest = ServiceRequest & {
   contact_email: string;
 };
 
+/** An invoice as the owner sees it, with the client attached. */
+export type StaffInvoice = {
+  id: number;
+  number: string;
+  company_name: string;
+  contact_email: string;
+  description: string;
+  amount: string;
+  currency: string;
+  issued_on: string;
+  due_on: string;
+  status: "draft" | "due" | "paid" | "overdue" | "void";
+  status_label: string;
+  paid_at: string | null;
+};
+
 export type StaffOverview = {
   totals: {
     clients: number;
@@ -107,8 +123,15 @@ export type StaffOverview = {
     outstanding: string;
     overdue_invoices: number;
     open_requests: number;
+    /** Money actually received, which is not the same as money billed. */
+    received_total: string;
+    received_this_month: string;
+    payments_count: number;
+    unpaid_invoices: number;
     currency: string;
   };
   clients: StaffClient[];
   requests: StaffServiceRequest[];
+  payments: StaffInvoice[];
+  unpaid: StaffInvoice[];
 };

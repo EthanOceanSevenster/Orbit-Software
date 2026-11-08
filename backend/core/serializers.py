@@ -269,3 +269,29 @@ class StaffServiceRequestSerializer(ServiceRequestSerializer):
 
     class Meta(ServiceRequestSerializer.Meta):
         fields = ServiceRequestSerializer.Meta.fields + ["company_name", "contact_email"]
+
+
+class StaffInvoiceSerializer(serializers.ModelSerializer):
+    """An invoice with the client attached, for the owner's payments view."""
+
+    company_name = serializers.CharField(source="account.company_name", read_only=True)
+    contact_email = serializers.CharField(source="account.user.email", read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = Invoice
+        fields = [
+            "id",
+            "number",
+            "company_name",
+            "contact_email",
+            "description",
+            "amount",
+            "currency",
+            "issued_on",
+            "due_on",
+            "status",
+            "status_label",
+            "paid_at",
+        ]
+        read_only_fields = fields

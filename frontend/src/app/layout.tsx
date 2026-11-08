@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { SiteChrome } from "@/components/SiteChrome";
 import { site } from "@/lib/site";
 
 import "./globals.css";
@@ -41,16 +42,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       {/* suppressHydrationWarning: browser extensions add attributes to <body> before React hydrates. */}
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
-        <Header />
-        {/*
-          Crossfades and lifts the page on navigation, so moving between pages
-          reads as one continuous site rather than a hard cut. Browsers without
-          the View Transitions API simply navigate as before.
-        */}
-        <ViewTransition name="page" default="page-shift">
-          <main className="flex-1">{children}</main>
-        </ViewTransition>
-        <Footer />
+        <SiteChrome header={<Header />} footer={<Footer />}>
+          {/*
+            Crossfades and lifts the page on navigation, so moving between
+            pages reads as one continuous site rather than a hard cut.
+            Browsers without the View Transitions API simply navigate as
+            before.
+          */}
+          <ViewTransition name="page" default="page-shift">
+            {children}
+          </ViewTransition>
+        </SiteChrome>
       </body>
     </html>
   );

@@ -1,6 +1,16 @@
 "use client";
 
-import { ArrowRight, ChevronDown, LogIn, Mail, Menu, Sparkles, X } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  LayoutDashboard,
+  LogIn,
+  Mail,
+  Menu,
+  Sparkles,
+  UserRound,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -10,6 +20,7 @@ import { containerClass } from "@/components/Container";
 import { Logo } from "@/components/Logo";
 import { SERVICES } from "@/lib/content";
 import { formatMoney, publicEmail, site } from "@/lib/site";
+import { useSession } from "@/lib/use-session";
 
 const LINKS = site.nav.filter((item) => item.href !== "/services");
 
@@ -22,6 +33,17 @@ const getServerScrolled = () => false;
 
 export function Header() {
   const pathname = usePathname();
+  const session = useSession();
+
+  // Where the button in the corner goes. A signed-in owner wants the console,
+  // a signed-in client wants their own page, and everyone else wants to sign
+  // in. Until the answer arrives we show the sign-in button, because that is
+  // what almost every visitor needs.
+  const account = session.isStaff
+    ? { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }
+    : session.signedIn
+      ? { href: "/account", label: "My account", icon: UserRound }
+      : { href: "/login", label: "Sign in", icon: LogIn };
   const scrolled = useSyncExternalStore(subscribeToScroll, getScrolled, getServerScrolled);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
@@ -71,8 +93,13 @@ export function Header() {
 
   return (
     <>
-      {/* Announcement strip */}
-      <div className="bg-gradient-to-r from-[#0038b8] via-brand to-[#0e7490] text-white">
+      {/* Announcement strip. It sells the offer, so it is for visitors who
+          have not bought yet; a signed-in client has. */}
+      <div
+        className={`bg-gradient-to-r from-[#0038b8] via-brand to-[#0e7490] text-white ${
+          session.signedIn ? "hidden" : ""
+        }`}
+      >
         <div className={`${containerClass} flex h-11 items-center justify-center gap-6 text-xs sm:text-sm lg:justify-between`}>
           <Link href="/get-started" className="group flex items-center gap-2 font-medium">
             <Sparkles className="h-4 w-4 shrink-0 text-sky-200" aria-hidden="true" />
@@ -246,8 +273,8 @@ export function Header() {
             >
               Contact sales
             </Link>
-            <ButtonLink href="/login" size="sm" className="shadow-lg shadow-brand/30">
-              <LogIn className="h-4 w-4" aria-hidden="true" /> Sign in
+            <ButtonLink href={account.href} size="sm" className="shadow-lg shadow-brand/30">
+              <account.icon className="h-4 w-4" aria-hidden="true" /> {account.label}
             </ButtonLink>
           </div>
 
@@ -315,8 +342,8 @@ export function Header() {
               <Mail className="h-5 w-5 text-sky-300" aria-hidden="true" />
               Contact sales
             </Link>
-            <ButtonLink href="/login" className="mt-5 w-full" onClick={closeAll}>
-              <LogIn className="h-4 w-4" aria-hidden="true" /> Sign in
+            <ButtonLink href={account.href} className="mt-5 w-full" onClick={closeAll}>
+              <account.icon className="h-4 w-4" aria-hidden="true" /> {account.label}
             </ButtonLink>
           </nav>
         ) : null}

@@ -164,6 +164,57 @@ address at all.
 > and point `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` and `NOTIFY_EMAIL` at it.
 > Nothing else needs to change.
 
+## The owner's dashboard
+
+Sign in as a staff account and you land on `/dashboard` rather than the client
+portal. It has its own sidebar, and the marketing header is hidden there: two
+navigations arguing on one screen helps nobody.
+
+| Page | What it answers |
+| --- | --- |
+| Overview | How the business stands today |
+| Clients | Everyone on the books, their plan and what they owe |
+| Payments | What has come in, and what is still outstanding |
+| Requests | Work clients have asked for and where each stands |
+
+Money received and money billed are kept apart deliberately. An invoice only
+counts as received once it is marked paid, which happens after the payment is
+confirmed with the provider, so the figures are what reached you rather than
+what was promised.
+
+Recurring revenue counts active clients only. A paused client still has a plan
+attached but is not paying, and counting them would overstate the business.
+
+Creating and editing still happens in the Django admin. This is for reading.
+
+### Browser tests
+
+The layout bugs that matter here are invisible to a terminal: a header still
+offering "Sign in" to someone already signed in, or a sidebar that pushes a
+phone screen sideways. Those are covered by Playwright.
+
+```
+cd frontend
+npx playwright install chromium        # once
+E2E_OWNER_PASSWORD=... npm run test:e2e
+```
+
+Both dev servers must already be running. The password comes from the
+environment so that no credential is committed.
+
+### Example data
+
+A development database with one client is hard to judge a dashboard by:
+
+```
+cd backend
+.venv\Scripts\python manage.py seed_demo            # add examples
+.venv\Scripts\python manage.py seed_demo --remove   # take them away again
+```
+
+Everything it creates is tagged and `--remove` deletes exactly those. It
+refuses to run with `DEBUG` off.
+
 ## Email notifications
 
 Contact and get-started submissions are emailed to `NOTIFY_EMAIL`, which is already
