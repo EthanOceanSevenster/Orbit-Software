@@ -19,6 +19,10 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
+    // The live server answers on an IP address, which cannot have a publicly
+    // trusted certificate. Running these against it is the point, so the
+    // warning a browser would show is accepted here.
+    ignoreHTTPSErrors: true,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
