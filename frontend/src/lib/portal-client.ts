@@ -20,15 +20,19 @@ function readCookie(name: string): string {
   return "";
 }
 
-async function csrfToken(): Promise<string> {
-  const existing = readCookie("csrftoken");
-  if (existing) return existing;
-  await fetch(`${PUBLIC_API_URL}/api/auth/csrf/`, { credentials: "same-origin" });
+async function csrfToken(refresh = false): Promise<string> {
+  if (!refresh) {
+    const existing = readCookie("csrftoken");
+    if (existing) return existing;
+  }
+  await fetch(`${PUBLIC_API_URL}/api/auth/csrf/`, {
+    credentials: "same-origin",
+    cache: "no-store",
+  });
   return readCookie("csrftoken");
 }
 
-async function post(path: string, body?: unknown) {
-  const token = await csrfToken();
+function send(path: string, token: string, body?: unknown) {
   return fetch(`${PUBLIC_API_URL}${path}`, {
     method: "POST",
     credentials: "same-origin",
@@ -39,6 +43,18 @@ async function post(path: string, body?: unknown) {
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+}
+
+async function post(path: string, body?: unknown) {
+  const response = await send(path, await csrfToken(), body);
+
+  // A 403 here is almost always a CSRF token that no longer matches: the
+  // cookie was cleared, or document.cookie handed back one set for another
+  // host, or Django rotated it and this tab still holds the old one. Reading
+  // the cookie cannot tell those apart, so fetch a fresh token and try once
+  // more. Only a second 403 is a refusal worth showing someone.
+  if (response.status !== 403) return response;
+  return send(path, await csrfToken(true), body);
 }
 
 export type LoginResult = { ok: true } | { ok: false; message: string };
@@ -54,6 +70,15 @@ export async function login(email: string, password: string): Promise<LoginResul
       return {
         ok: false,
         message: "Too many attempts from this network. Please try again later.",
+      };
+    }
+    if (res.status === 403) {
+      // A fresh token was already tried, so this is not a stale cookie.
+      return {
+        ok: false,
+        message:
+          "Your browser would not send a security cookie. Check that cookies are " +
+          "allowed for this site, then reload and try again.",
       };
     }
     const data = await res.json().catch(() => ({}));
@@ -126,6 +151,15 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
       return {
         ok: false,
         message: "Too many sign-ups from this network. Please try again later.",
+        fieldErrors: {},
+      };
+    }
+    if (res.status === 403) {
+      return {
+        ok: false,
+        message:
+          "Your browser would not send a security cookie. Check that cookies are " +
+          "allowed for this site, then reload and try again.",
         fieldErrors: {},
       };
     }
