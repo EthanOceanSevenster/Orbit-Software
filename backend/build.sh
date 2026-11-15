@@ -21,3 +21,9 @@ python manage.py seed_plans
 # plan has no shell, so this is the only way to get a first login. It is a
 # no-op once the account exists and never resets an existing password.
 python manage.py bootstrap_admin
+
+# Create any clients listed in SEED_CLIENTS that do not exist yet. Also a
+# no-op on every deploy after the first, and it never edits a client who is
+# already there: a deploy must never reset a paying customer's password or
+# put them back on an old price.
+python manage.py seed_clients

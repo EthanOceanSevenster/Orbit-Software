@@ -343,3 +343,40 @@ export async function updateSavedCard(
     return { ok: false, message: "We could not reach the server. Check your connection." };
   }
 }
+
+export type CreatedClient = {
+  id: number;
+  company_name: string;
+  contact: string;
+  email: string;
+  /** Shown once. The server cannot read it back either. */
+  password: string;
+  monthly_total: string;
+  currency: string;
+  next_payment_date: string | null;
+  website_url: string;
+  plan_name: string;
+  addons: string[];
+  invoice: { number: string; amount: string } | null;
+};
+
+/** Create a client login and their portal account, from the console. */
+export async function createClient(
+  body: Record<string, unknown>,
+): Promise<{ ok: true; client: CreatedClient } | { ok: false; message: string }> {
+  try {
+    const res = await post("/api/staff/clients/create/", body);
+    if (res.ok) return { ok: true, client: (await res.json()) as CreatedClient };
+
+    const data = (await res.json().catch(() => ({}))) as { detail?: string };
+    if (res.status === 403) {
+      return { ok: false, message: "Only the owner account can add clients." };
+    }
+    return {
+      ok: false,
+      message: data.detail ?? "That did not save. Please check the fields and try again.",
+    };
+  } catch {
+    return { ok: false, message: "We could not reach the server. Check your connection." };
+  }
+}

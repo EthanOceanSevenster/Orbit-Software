@@ -1,6 +1,14 @@
 from django.urls import path
 
-from . import auth_views, billing_views, payfast_views, service_views, staff_views, views
+from . import (
+    auth_views,
+    billing_views,
+    payfast_views,
+    service_views,
+    staff_client_views,
+    staff_views,
+    views,
+)
 
 urlpatterns = [
     path("health/", views.health, name="health"),
@@ -14,6 +22,11 @@ urlpatterns = [
     # every signed-out visitor's console.
     path("auth/session/", auth_views.SessionView.as_view(), name="auth-session"),
     # The owner's dashboard. Staff only.
+    path(
+        "staff/clients/create/",
+        staff_client_views.StaffClientCreateView.as_view(),
+        name="staff-client-create",
+    ),
     path("staff/overview/", staff_views.StaffOverviewView.as_view(), name="staff-overview"),
     # Extra work a signed-in client asks for
     path(

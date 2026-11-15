@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ClientsTable, PageHeading, Panel, StatCard } from "@/components/console/parts";
 import { fetchStaffOverview } from "@/lib/portal";
 import { formatMoney } from "@/lib/site";
-import { CircleCheck, CirclePause, Clock, Users } from "lucide-react";
+import { CircleCheck, CirclePause, Clock, UserPlus, Users } from "lucide-react";
 
 // Per-request, like the rest of the console. See the note in layout.tsx.
 export const instant = false;
@@ -24,10 +25,19 @@ export default async function ClientsPage() {
 
   return (
     <>
-      <PageHeading
-        title="Clients"
-        lead="Everyone on the books, what they are on and what they owe."
-      />
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <PageHeading
+          title="Clients"
+          lead="Everyone on the books, what they are on and what they owe."
+        />
+        <Link
+          href="/dashboard/clients/new"
+          className="mb-8 inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-hover"
+        >
+          <UserPlus className="h-4 w-4" aria-hidden="true" />
+          Add a client
+        </Link>
+      </div>
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
