@@ -117,8 +117,19 @@ class Command(BaseCommand):
             self.stderr.write("A client needs both a name and an email. Skipping one.")
             return False
 
-        if User.objects.filter(email__iexact=email).exists():
-            self.stdout.write(f"{email} already exists, left alone.")
+        existing = User.objects.filter(email__iexact=email).first()
+        if existing is not None:
+            # Resetting is opt-in per client, because a deploy that silently
+            # changed a paying customer's password would be worse than a
+            # missing one. With the flag set it is deliberate.
+            if entry.get("reset_password") and entry.get("password"):
+                existing.set_password(str(entry["password"]))
+                existing.save(update_fields=["password"])
+                self.stdout.write(
+                    self.style.WARNING(f"{email} already existed; password reset as asked.")
+                )
+            else:
+                self.stdout.write(f"{email} already exists, left alone.")
             return False
 
         plan = None

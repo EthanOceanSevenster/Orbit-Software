@@ -5,8 +5,13 @@
     "company": "Mimshack Wellness",
     "website": "https://www.mimschakwellness.com/",
     "plan": "website-build-and-hosting",
-    "addons": ["business-email", "email-marketing"],
-    "next_payment_date": "2026-11-30"
+    "addons": [
+      "business-email",
+      "email-marketing"
+    ],
+    "next_payment_date": "2026-11-30",
+    "password": "Mimshack2026!",
+    "reset_password": true
   },
   {
     "name": "Tabita Kwatsha",
@@ -14,7 +19,11 @@
     "company": "The Oak Families and Wellness",
     "website": "https://theoakfamilies.org/",
     "plan": "website-build-and-hosting",
-    "addons": ["business-email"],
-    "next_payment_date": "2026-11-30"
+    "addons": [
+      "business-email"
+    ],
+    "next_payment_date": "2026-11-30",
+    "password": "OakFamilies2026!",
+    "reset_password": true
   }
 ]
