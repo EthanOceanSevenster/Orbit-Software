@@ -51,6 +51,11 @@ class AddOn(TimeStampedModel):
     slug = models.SlugField(max_length=100, unique=True)
     description = models.TextField(blank=True)
     monthly_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    # Some add-ons cost something to switch on: a mailbox has to be created
+    # and the domain's mail records changed, and an email marketing list has
+    # to be built and a sending domain verified. Zero for anything that is
+    # simply billed monthly.
+    setup_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default="ZAR")
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
@@ -148,6 +153,57 @@ class ClientAccount(TimeStampedModel):
     website_url = models.URLField(
         blank=True, help_text="The live site we built and host for this client."
     )
+
+    # Who we actually deal with, and where an invoice is addressed. Blank is
+    # allowed throughout: somebody who signs themselves up has given us a name
+    # and an email and nothing else, and the portal must still work for them.
+    contact_name = models.CharField(
+        max_length=120, blank=True, help_text="Who we speak to. Defaults to the login name."
+    )
+    phone = models.CharField(max_length=40, blank=True)
+    billing_email = models.EmailField(
+        blank=True, help_text="Where invoices go. Defaults to the login email."
+    )
+    address = models.TextField(
+        blank=True, help_text="Postal address, as it should appear on an invoice."
+    )
+    vat_number = models.CharField(max_length=30, blank=True, help_text="Theirs, if registered.")
+
+    # The domain we registered for them. Recorded here because a domain
+    # renews every year and nothing else in the system would remember to
+    # charge for it, which means quietly absorbing the cost forever.
+    # --- Saved card -------------------------------------------------
+    # The token Payfast gives us after the client enters their card on
+    # Payfast's page. It is all we hold: no number, no CVV, nothing that
+    # would matter if this database leaked.
+    payfast_token = models.CharField(max_length=64, blank=True)
+    card_saved_at = models.DateTimeField(null=True, blank=True)
+    # The exact words they agreed to, kept verbatim. In a dispute the
+    # question is what the client was shown, not what we meant.
+    card_consent_text = models.TextField(blank=True)
+    autopay = models.BooleanField(
+        default=True,
+        help_text="Charge the saved card automatically when an invoice is raised.",
+    )
+
+    domain = models.CharField(
+        max_length=255, blank=True, help_text="Registered in the client's name, e.g. theirshop.co.za"
+    )
+    domain_renews_on = models.DateField(
+        null=True,
+        blank=True,
+        help_text="When the registrar next charges for it. The first year is in the setup fee.",
+    )
+    domain_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Charged once a year from year two. Leave blank to use the standard fee.",
+    )
+    client_since = models.DateField(
+        null=True, blank=True, help_text="When they became a paying client."
+    )
     plan = models.ForeignKey(
         Plan, null=True, blank=True, on_delete=models.SET_NULL, related_name="clients"
     )
@@ -173,6 +229,15 @@ class ClientAccount(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.company_name} ({self.user.get_username()})"
+
+    @property
+    def contact(self) -> str:
+        """Who to address. Falls back to the login's own name."""
+        return self.contact_name or self.user.get_full_name() or self.user.get_username()
+
+    @property
+    def invoice_email(self) -> str:
+        return self.billing_email or self.user.email
 
     @property
     def currency(self) -> str:
@@ -227,6 +292,17 @@ class Invoice(TimeStampedModel):
     currency = models.CharField(max_length=3, default="ZAR")
     issued_on = models.DateField()
     due_on = models.DateField()
+
+    # Hosting is paid for the month ahead, so an invoice has to say which
+    # month that is. Without these, "R170" on a statement means nothing a year
+    # later and neither of us can answer what it bought.
+    period_start = models.DateField(
+        null=True, blank=True, help_text="First day of the period this invoice pays for."
+    )
+    period_end = models.DateField(
+        null=True, blank=True, help_text="Last day of that period."
+    )
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DUE)
     paid_at = models.DateTimeField(null=True, blank=True)
 
@@ -239,6 +315,62 @@ class Invoice(TimeStampedModel):
     @property
     def is_payable(self) -> bool:
         return self.status in {self.Status.DUE, self.Status.OVERDUE}
+
+    @property
+    def period_label(self) -> str:
+        """What this invoice buys, in words, or empty if nobody said."""
+        if not self.period_start or not self.period_end:
+            return ""
+        same_month = (
+            self.period_start.year == self.period_end.year
+            and self.period_start.month == self.period_end.month
+        )
+        if same_month:
+            return self.period_start.strftime("%B %Y")
+        return (
+            f"{self.period_start.strftime('%d %b %Y')} to "
+            f"{self.period_end.strftime('%d %b %Y')}"
+        )
+
+    def recalculate_total(self) -> Decimal:
+        """Sets ``amount`` from the lines, when there are any.
+
+        An invoice with no lines keeps whatever total was typed, so the
+        hand-written ones that already exist are left alone.
+        """
+        lines = list(self.lines.all())
+        if not lines:
+            return self.amount
+        total = sum((line.amount for line in lines), Decimal("0.00"))
+        if total != self.amount:
+            self.amount = total
+            self.save(update_fields=["amount", "updated_at"])
+        return total
+
+
+class InvoiceLine(models.Model):
+    """One line on an invoice.
+
+    Separate from the invoice's own total so an invoice can say "hosting for
+    December, R120" and "business email, R50" rather than one number and a
+    sentence. The total is derived from these when they exist.
+    """
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="lines")
+    description = models.CharField(max_length=200)
+    quantity = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("1.00"))
+    unit_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.description} x{self.quantity}"
+
+    @property
+    def amount(self) -> Decimal:
+        return (self.quantity * self.unit_amount).quantize(Decimal("0.01"))
 
 
 class Payment(TimeStampedModel):
@@ -289,6 +421,8 @@ class ServiceRequest(TimeStampedModel):
         WEBSITE = "website", "A website"
         REDESIGN = "redesign", "Website redesign"
         DASHBOARD = "dashboard", "Live dashboard"
+        POWER_BI = "power_bi", "Power BI report"
+        AUTOMATION = "automation", "Automate a manual job"
         MARKETING = "marketing", "Marketing"
         ECOMMERCE = "ecommerce", "Online shop"
         SEO = "seo", "SEO and search"

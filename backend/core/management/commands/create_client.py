@@ -109,6 +109,10 @@ class Command(BaseCommand):
             description = "First month"
             if options["setup_fee"] and plan:
                 amount += plan.setup_fee
+                # Add-ons chosen up front are set up in the same week as the
+                # site, so their once-off fees belong on the same invoice.
+                for addon in account.addons.all():
+                    amount += addon.setup_fee
                 description = "Website build and first month"
             invoice = Invoice.objects.create(
                 account=account,

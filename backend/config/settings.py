@@ -6,6 +6,7 @@ Environment variables are read from backend/.env (see .env.example).
 
 import os
 from email.utils import formataddr
+from decimal import Decimal
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -258,6 +259,33 @@ DEFAULT_FROM_EMAIL = (
 REPLY_TO_EMAIL = os.getenv("REPLY_TO_EMAIL", "")
 
 # ---------------------------------------------------------------------------
+# Invoicing
+# ---------------------------------------------------------------------------
+# Printed on every invoice. Bank details sit in the environment rather than
+# the repository: they are not secret, but they are the one thing on an
+# invoice somebody would want to quietly change.
+#
+# Blank values are simply left off the invoice, so nothing shows a half-filled
+# bank block to a client.
+BANK_NAME = os.getenv("BANK_NAME", "")
+BANK_ACCOUNT_NAME = os.getenv("BANK_ACCOUNT_NAME", "")
+BANK_ACCOUNT_NUMBER = os.getenv("BANK_ACCOUNT_NUMBER", "")
+BANK_BRANCH_CODE = os.getenv("BANK_BRANCH_CODE", "")
+
+# Ours, if we ever register. Blank means invoices carry no VAT line, which is
+# correct for a business under the registration threshold.
+COMPANY_VAT_NUMBER = os.getenv("COMPANY_VAT_NUMBER", "")
+
+# Hosting is billed for the month ahead. Said once here so the wording on the
+# invoice, the portal and the reminder email cannot drift apart.
+BILLING_IN_ADVANCE = env_bool("BILLING_IN_ADVANCE", True)
+
+# The first year of a client's domain is inside the setup fee. From year two
+# it is charged once a year, rather than raised into the monthly fee, so a
+# client's monthly price never moves after they sign.
+DOMAIN_RENEWAL_FEE = Decimal(os.getenv("DOMAIN_RENEWAL_FEE", "200.00"))
+
+# ---------------------------------------------------------------------------
 # Public identity
 # ---------------------------------------------------------------------------
 # PUBLIC_EMAIL is shown on the website and in the signature. NOTIFY_EMAIL above
@@ -282,6 +310,15 @@ SIGNATURE_FORBIDDEN_TERMS = env_list("SIGNATURE_FORBIDDEN_TERMS")
 # Blank until a Paystack account exists. While blank the portal tells clients
 # card payments are not available yet rather than pretending to take money.
 # The secret key must never reach the browser; only the public key may.
+
+# Payfast. Cards are saved as a tokenization agreement and charged monthly
+# without the client present, so the passphrase is not optional: it salts
+# every signature, and an unsalted MD5 is forgeable by anyone.
+PAYFAST_MERCHANT_ID = os.getenv("PAYFAST_MERCHANT_ID", "")
+PAYFAST_MERCHANT_KEY = os.getenv("PAYFAST_MERCHANT_KEY", "")
+PAYFAST_PASSPHRASE = os.getenv("PAYFAST_PASSPHRASE", "")
+# Sandbox by default. Going live is a deliberate act, not a missing variable.
+PAYFAST_SANDBOX = os.getenv("PAYFAST_SANDBOX", "1") not in {"0", "false", "False", ""}
 
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
 PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "")

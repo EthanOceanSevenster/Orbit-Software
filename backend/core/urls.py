@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import auth_views, billing_views, service_views, staff_views, views
+from . import auth_views, billing_views, payfast_views, service_views, staff_views, views
 
 urlpatterns = [
     path("health/", views.health, name="health"),
@@ -10,6 +10,9 @@ urlpatterns = [
     path("auth/register/", auth_views.RegisterView.as_view(), name="auth-register"),
     path("auth/logout/", auth_views.LogoutView.as_view(), name="auth-logout"),
     path("auth/me/", auth_views.MeView.as_view(), name="auth-me"),
+    # Answers for anybody, so the header can ask without logging an error in
+    # every signed-out visitor's console.
+    path("auth/session/", auth_views.SessionView.as_view(), name="auth-session"),
     # The owner's dashboard. Staff only.
     path("staff/overview/", staff_views.StaffOverviewView.as_view(), name="staff-overview"),
     # Extra work a signed-in client asks for
@@ -21,6 +24,11 @@ urlpatterns = [
     # Billing
     path("billing/invoices/", billing_views.InvoiceListView.as_view(), name="invoice-list"),
     path(
+        "billing/invoices/<int:pk>/",
+        billing_views.InvoiceDetailView.as_view(),
+        name="invoice-detail",
+    ),
+    path(
         "billing/invoices/<int:pk>/pay/",
         billing_views.InvoicePayView.as_view(),
         name="invoice-pay",
@@ -30,6 +38,22 @@ urlpatterns = [
         billing_views.PaystackWebhookView.as_view(),
         name="paystack-webhook",
     ),
+    path(
+        "billing/payfast/start/",
+        payfast_views.PayfastStartView.as_view(),
+        name="payfast-start",
+    ),
+    path(
+        "billing/payfast/notify/",
+        payfast_views.PayfastNotifyView.as_view(),
+        name="payfast-notify",
+    ),
+    path(
+        "billing/payfast/return/",
+        payfast_views.PayfastReturnView.as_view(),
+        name="payfast-return",
+    ),
+    path("billing/card/", payfast_views.SavedCardView.as_view(), name="saved-card"),
     path(
         "billing/paystack/return/",
         billing_views.PaystackReturnView.as_view(),

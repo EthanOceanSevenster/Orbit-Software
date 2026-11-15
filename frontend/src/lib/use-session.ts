@@ -36,7 +36,7 @@ export function useSession(): Session {
 
     async function load() {
       try {
-        const res = await fetch(`${PUBLIC_API_URL}/api/auth/me/`, {
+        const res = await fetch(`${PUBLIC_API_URL}/api/auth/session/`, {
           credentials: "same-origin",
           cache: "no-store",
         });
@@ -45,9 +45,13 @@ export function useSession(): Session {
           setSession(SIGNED_OUT);
           return;
         }
-        const data = (await res.json()) as { is_staff?: boolean };
+        const data = (await res.json()) as { signed_in?: boolean; is_staff?: boolean };
         if (cancelled) return;
-        setSession({ loading: false, signedIn: true, isStaff: Boolean(data.is_staff) });
+        setSession({
+          loading: false,
+          signedIn: Boolean(data.signed_in),
+          isStaff: Boolean(data.is_staff),
+        });
       } catch {
         // An unreachable API is not a signed-in visitor, and the header has
         // no business showing an error for it.

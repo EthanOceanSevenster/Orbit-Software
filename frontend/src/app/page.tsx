@@ -11,7 +11,9 @@ import { PlainAnswer } from "@/components/PlainAnswer";
 import { PlanCards, PlanCardsSkeleton } from "@/components/PlanCards";
 import { SectionHeading } from "@/components/SectionHeading";
 import { ServiceCard } from "@/components/ServiceCard";
+import { Testimonials } from "@/components/Testimonials";
 import { TrustBar } from "@/components/TrustBar";
+import { WorkShowcase } from "@/components/WorkShowcase";
 import { CAPABILITIES, INDUSTRIES, SERVICES, WHY_US } from "@/lib/content";
 import { site } from "@/lib/site";
 
@@ -44,7 +46,7 @@ export default function HomePage() {
           <SectionHeading
             eyebrow="What we do"
             title="Everything your website needs, from one team"
-            text="You deal with one company and one monthly fee, instead of a designer, a host and a support company."
+            text="One person and one monthly fee, instead of a designer, a host and a support company who all blame each other."
           />
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {SERVICES.map((service) => (
@@ -96,14 +98,40 @@ export default function HomePage() {
         </Container>
       </section>
 
+      {/* Recent work. Links to the live sites, because a prospect believes a
+          site they can click into and not a paragraph claiming we are good. */}
+      <section id="work" className="border-t border-border bg-muted py-20 sm:py-28">
+        <Container>
+          <SectionHeading
+            eyebrow="Recent work"
+            title="Sites we have built and still run"
+            text="Live businesses, not mock-ups. Click through and judge them yourself."
+          />
+          <div className="mt-12">
+            <WorkShowcase />
+          </div>
+          <NextStep href="/work" label="See all of our work" />
+        </Container>
+      </section>
+
+      <Testimonials />
+
       {/* Why Orbit */}
-      <section id="why-orbit" className="relative overflow-hidden py-20 text-white sm:py-28">
+      {/* bg-hero, like every other white-text band. Without it this section
+          borrowed whatever the page background happened to be, which was fine
+          while the whole site was dark and left white text on white once a
+          light theme existed. OrbitBackground only paints glows and rings; it
+          has no colour of its own. */}
+      <section
+        id="why-orbit"
+        className="bg-hero relative overflow-hidden py-20 text-white sm:py-28"
+      >
         <OrbitBackground focus="center" />
         <Container className="relative">
           <SectionHeading
             invert
             eyebrow={`Why ${site.name.split(" ")[0]}`}
-            title="A software company, not a template shop"
+            title="A developer, not a template shop"
             text="We bring engineering discipline to every website we build, then stay with you for the long run."
           />
           <div className="mt-14 grid gap-6 md:grid-cols-3">

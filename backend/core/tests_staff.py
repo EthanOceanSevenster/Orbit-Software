@@ -170,3 +170,41 @@ class StaffOverviewTests(APITestCase):
         self.client.force_login(self.owner)
         response = self.client.get(reverse("staff-overview"))
         self.assertNotIn("internal only", response.content.decode())
+
+
+class SessionEndpointTests(APITestCase):
+    """The header asks this on every public page, signed in or not."""
+
+    def setUp(self):
+        self.user = User.objects.create_user("dee@example.com", "dee@example.com", "pw-dee-123")
+        self.staff = User.objects.create_superuser(
+            "boss@example.com", "boss@example.com", "pw-boss-123"
+        )
+
+    def test_an_anonymous_visitor_gets_an_answer_not_an_error(self):
+        """A 401 here puts a red error in the console of every signed-out visitor."""
+        response = self.client.get(reverse("auth-session"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"signed_in": False, "is_staff": False})
+
+    def test_tells_an_anonymous_visitor_nothing_else(self):
+        body = self.client.get(reverse("auth-session")).json()
+        self.assertEqual(set(body), {"signed_in", "is_staff"})
+
+    def test_reports_a_signed_in_client(self):
+        self.client.force_login(self.user)
+        self.assertEqual(
+            self.client.get(reverse("auth-session")).json(),
+            {"signed_in": True, "is_staff": False},
+        )
+
+    def test_reports_the_owner(self):
+        self.client.force_login(self.staff)
+        self.assertEqual(
+            self.client.get(reverse("auth-session")).json(),
+            {"signed_in": True, "is_staff": True},
+        )
+
+    def test_me_still_refuses_an_anonymous_caller(self):
+        """The portal relies on that 401 to send people to the login page."""
+        self.assertIn(self.client.get(reverse("auth-me")).status_code, (401, 403))

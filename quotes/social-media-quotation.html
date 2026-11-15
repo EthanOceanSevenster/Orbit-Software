@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Orbit Software — Social media and advertising quotation</title>
+    <style>
+      /*
+       * A quotation that prints. Everything is sized in millimetres against
+       * an A4 page, because this ends up as a PDF on somebody's phone and as
+       * paper on somebody's desk, and it has to survive both.
+       *
+       * Edit the marked fields, then re-render with render.mjs.
+       */
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      :root {
+        --navy: #0b1b3a;
+        --navy-soft: #16305c;
+        --brand: #0b5fff;
+        --ink: #11182a;
+        --muted: #5b6678;
+        --line: #dfe4ec;
+        --wash: #f6f8fc;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Inter, -apple-system, system-ui, sans-serif;
+        color: var(--ink);
+        font-size: 10.2pt;
+        line-height: 1.55;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .sheet {
+        width: 210mm;
+      }
+      .inner {
+        padding: 0 16mm 14mm;
+      }
+
+      /* Nothing is broken by hand: headings stay with their tables and rows
+         never split, so the sheets fill themselves. */
+      .note,
+      .total,
+      .sign {
+        page-break-inside: avoid;
+      }
+      h2 {
+        page-break-after: avoid;
+      }
+      tr {
+        page-break-inside: avoid;
+      }
+
+      /* ---------------------------------------------------------------- */
+      /* Masthead                                                          */
+      /* ---------------------------------------------------------------- */
+      header {
+        background:
+          radial-gradient(60% 120% at 85% 0%, rgba(11, 95, 255, 0.45), transparent 62%),
+          var(--navy);
+        color: #fff;
+        padding: 14mm 16mm 11mm;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .brand svg {
+        width: 34px;
+        height: 34px;
+      }
+      .brand-name {
+        font-size: 15pt;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+      .brand-line {
+        font-size: 7.4pt;
+        text-transform: uppercase;
+        letter-spacing: 2.4px;
+        color: #9fc0ff;
+        margin-top: 2px;
+      }
+      h1 {
+        font-size: 21pt;
+        margin: 9mm 0 0;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
+      .sub {
+        margin-top: 3mm;
+        color: #c3d2ea;
+        max-width: 125mm;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6mm;
+        margin-top: 9mm;
+        padding-top: 6mm;
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .meta dt {
+        font-size: 7.2pt;
+        text-transform: uppercase;
+        letter-spacing: 1.6px;
+        color: #8fb0e4;
+      }
+      .meta dd {
+        margin: 2px 0 0;
+        font-weight: 600;
+        font-size: 10pt;
+      }
+
+      /* ---------------------------------------------------------------- */
+      /* Body                                                              */
+      /* ---------------------------------------------------------------- */
+      h2 {
+        font-size: 12.5pt;
+        margin: 8mm 0 3mm;
+        letter-spacing: -0.2px;
+      }
+      h2:first-of-type {
+        margin-top: 9mm;
+      }
+      h3 {
+        font-size: 10.4pt;
+        margin: 6mm 0 2mm;
+      }
+      p {
+        margin: 0 0 3mm;
+      }
+      .lead {
+        color: var(--muted);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 3mm 0 4mm;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 3.2mm 3.5mm;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      thead th {
+        background: var(--wash);
+        font-size: 7.6pt;
+        text-transform: uppercase;
+        letter-spacing: 1.4px;
+        color: var(--muted);
+        border-bottom: 1px solid var(--line);
+      }
+      td.amount,
+      th.amount {
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      tbody tr:last-child td {
+        border-bottom: 1px solid var(--line);
+      }
+      .pack {
+        font-weight: 700;
+      }
+      .pack small {
+        display: block;
+        font-weight: 400;
+        color: var(--muted);
+        font-size: 8.6pt;
+        margin-top: 1mm;
+      }
+
+      ul {
+        margin: 0 0 3mm;
+        padding-left: 5mm;
+      }
+      li {
+        margin-bottom: 1.4mm;
+      }
+
+      .note {
+        background: var(--wash);
+        border-left: 3px solid var(--brand);
+        padding: 4mm 5mm;
+        margin: 4mm 0;
+      }
+      .note strong {
+        color: var(--navy);
+      }
+
+      .total {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        background: var(--navy);
+        color: #fff;
+        padding: 5mm 6mm;
+        margin-top: 5mm;
+      }
+      .total span:last-child {
+        font-size: 14pt;
+        font-weight: 700;
+      }
+
+      .two {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8mm;
+      }
+
+      .sign {
+        margin-top: 6mm;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10mm;
+      }
+      .sign div {
+        border-top: 1px solid var(--ink);
+        padding-top: 2mm;
+        font-size: 8.6pt;
+        color: var(--muted);
+      }
+
+      footer {
+        margin-top: 10mm;
+        padding-top: 4mm;
+        border-top: 1px solid var(--line);
+        font-size: 8.2pt;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .fill {
+        background: #fff6d8;
+        padding: 0 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="sheet">
+      <header>
+        <div class="brand">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <circle cx="24" cy="24" r="23" fill="#0b5fff" opacity="0.18" />
+            <ellipse cx="24" cy="24" rx="21" ry="8" fill="none" stroke="#9fc0ff" stroke-width="1.6" transform="rotate(-25 24 24)" />
+            <ellipse cx="24" cy="24" rx="14" ry="5.5" fill="none" stroke="#9fc0ff" stroke-width="1.4" transform="rotate(-25 24 24)" />
+            <circle cx="24" cy="24" r="4.6" fill="#fff" />
+          </svg>
+          <div>
+            <div class="brand-name">Orbit Software</div>
+            <div class="brand-line">Websites · Social media · Advertising</div>
+          </div>
+        </div>
+
+        <h1>Social media management and advertising</h1>
+        <p class="sub">
+          Managed Facebook and LinkedIn presence, with paid campaigns on both
+          platforms. Prepared for your review and valid for 30 days.
+        </p>
+
+        <dl class="meta">
+          <div>
+            <dt>Prepared for</dt>
+            <dd><span class="fill">[Client name]</span></dd>
+          </div>
+          <div>
+            <dt>Quote number</dt>
+            <dd><span class="fill">Q-2026-001</span></dd>
+          </div>
+          <div>
+            <dt>Date</dt>
+            <dd><span class="fill">[Date]</span></dd>
+          </div>
+          <div>
+            <dt>Valid until</dt>
+            <dd><span class="fill">[Date + 30 days]</span></dd>
+          </div>
+        </dl>
+      </header>
+
+      <div class="inner">
+        <h2>What this covers</h2>
+        <p class="lead">
+          Two things, priced separately so you can see what you are paying for:
+          the content that goes out on your Facebook and LinkedIn pages every
+          week, and the paid campaigns that put it in front of people who are
+          not already following you.
+        </p>
+
+        <h2>Once-off setup</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="amount">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Account and brand setup</strong>
+                <ul style="margin-top: 2mm">
+                  <li>Audit of your existing Facebook and LinkedIn pages</li>
+                  <li>Pages built or rebuilt properly: profile, cover, about, services, contact details</li>
+                  <li>Meta Business Manager and LinkedIn Campaign Manager set up in your name, owned by you</li>
+                  <li>Meta Pixel and LinkedIn Insight Tag installed on your website so results can be measured</li>
+                  <li>Post templates in your brand colours, so everything looks like one business</li>
+                  <li>First 90-day content plan, agreed with you before anything is published</li>
+                </ul>
+              </td>
+              <td class="amount">R2 500</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="lead" style="font-size: 9pt">
+          Charged once. Every account stays in your name and remains yours if we
+          ever stop working together.
+        </p>
+
+        <h2>Monthly management</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 32%">Package</th>
+              <th>What you get each month</th>
+              <th class="amount">Monthly</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="pack">
+                Essential
+                <small>Presence, no ads</small>
+              </td>
+              <td>
+                8 posts (4 Facebook, 4 LinkedIn) with graphics and copy ·
+                scheduling · replies to comments and messages on weekdays ·
+                monthly one-page report
+              </td>
+              <td class="amount">R3 500</td>
+            </tr>
+            <tr>
+              <td class="pack">
+                Standard
+                <small>Most businesses start here</small>
+              </td>
+              <td>
+                16 posts · 2 short videos or reels · everything in Essential ·
+                paid campaigns on Facebook and LinkedIn managed for you, up to
+                R10 000 of ad spend · lead tracking · monthly report and a call
+              </td>
+              <td class="amount">R5 500</td>
+            </tr>
+            <tr>
+              <td class="pack">
+                Growth
+                <small>For active lead generation</small>
+              </td>
+              <td>
+                24 posts · 4 videos · everything in Standard · ad spend managed
+                up to R30 000 · one landing page built and maintained ·
+                A/B testing · reports every two weeks
+              </td>
+              <td class="amount">R8 500</td>
+            </tr>
+            <tr>
+              <td class="pack">
+                Ads only
+                <small>You post, we run the campaigns</small>
+              </td>
+              <td>
+                Campaign build, audiences, creatives, daily monitoring and
+                optimisation, up to R10 000 of ad spend. Above that, 15% of
+                spend. No organic posting.
+              </td>
+              <td class="amount">R2 500</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note">
+          <strong>Advertising spend is not included.</strong> Facebook and
+          LinkedIn bill your card directly, so you keep control of the budget
+          and we never mark it up. The fees above are for managing those
+          campaigns.
+        </div>
+
+        <h2>What to budget for advertising</h2>
+        <p class="lead">
+          Our fee buys the work. The ad spend buys the audience, and the two
+          platforms are not priced the same.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Platform</th>
+              <th>Sensible monthly minimum</th>
+              <th>What it is good at</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Facebook and Instagram</strong></td>
+              <td>R3 000</td>
+              <td>Reach and leads at low cost, tight targeting by area and interest</td>
+            </tr>
+            <tr>
+              <td><strong>LinkedIn</strong></td>
+              <td>R6 000</td>
+              <td>
+                Reaching decision makers by job title and company. Clicks cost
+                several times what they do on Facebook, so a small budget here
+                buys very little
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="lead" style="font-size: 9pt">
+          If the budget is tight, we would rather put all of it behind Facebook
+          and add LinkedIn later than split it and have neither work.
+        </p>
+
+        <h2>Extras, if you want them</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="amount">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Additional post beyond the package</td><td class="amount">R250</td></tr>
+            <tr><td>Short video or reel, edited from your footage</td><td class="amount">R850</td></tr>
+            <tr><td>Landing page for a campaign</td><td class="amount">R1 500</td></tr>
+            <tr><td>Website, built and hosted</td><td class="amount">From R500 setup, R120/month</td></tr>
+            <tr><td>Photography or filming on site</td><td class="amount">Quoted per job</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Example: Standard package, first month</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="amount">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Once-off setup</td><td class="amount">R2 500</td></tr>
+            <tr><td>Standard package, month one</td><td class="amount">R5 500</td></tr>
+            <tr><td>Advertising spend, paid directly to Facebook and LinkedIn</td><td class="amount">Your budget</td></tr>
+          </tbody>
+        </table>
+        <div class="total">
+          <span>Payable to Orbit Software in month one</span>
+          <span>R8 000</span>
+        </div>
+        <p class="lead" style="font-size: 9pt; margin-top: 3mm">
+          R5 500 a month after that. All amounts exclude VAT. Orbit Software is
+          not VAT registered, so no VAT is charged.
+        </p>
+
+        <h2>What we need from you</h2>
+        <div class="two">
+          <ul>
+            <li>Logo and any brand colours or fonts you use</li>
+            <li>Admin access to your Facebook and LinkedIn pages</li>
+            <li>Photographs of your work, premises or team</li>
+          </ul>
+          <ul>
+            <li>One person who can approve content</li>
+            <li>A card on the ad accounts for the ad spend</li>
+            <li>Answers to questions within two working days</li>
+          </ul>
+        </div>
+
+        <h2>Terms</h2>
+        <ul>
+          <li><strong>Term.</strong> Three months to start, then month to month. Either side can end it with 30 days written notice.</li>
+          <li><strong>Payment.</strong> Setup fee on acceptance. The monthly fee is invoiced on the first of each month and payable within seven days.</li>
+          <li><strong>Approval.</strong> Content is sent for approval five working days before it goes out. No reply by the publish date is taken as approved.</li>
+          <li><strong>Ownership.</strong> Your pages, ad accounts, pixel data and published content belong to you, during and after.</li>
+          <li><strong>Results.</strong> We commit to the work listed here, done properly and on time. No agency can promise a number of leads or sales, and we will not pretend otherwise. Reports show exactly what was spent and what it produced.</li>
+          <li><strong>Validity.</strong> This quotation is valid for 30 days from the date above.</li>
+        </ul>
+
+        <h2>Acceptance</h2>
+        <p class="lead">
+          Sign and return, or simply reply to confirm which package you would
+          like and we will send the first invoice.
+        </p>
+        <div class="sign">
+          <div>Signed for <span class="fill">[Client name]</span> · date</div>
+          <div>Signed for Orbit Software · date</div>
+        </div>
+
+        <footer>
+          <span>Orbit Software · South Africa</span>
+          <span><span class="fill">[your email address]</span></span>
+        </footer>
+      </div>
+    </section>
+  </body>
+</html>

@@ -102,6 +102,26 @@ export default async function AccountPage() {
         />
       </div>
 
+      <div className="mt-6">
+        <Panel title="Your details">
+          <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+            <Detail label="Business" value={account.company_name} />
+            <Detail label="Contact" value={account.contact_name} />
+            <Detail label="Email for invoices" value={account.billing_email} />
+            <Detail label="Phone" value={account.phone} />
+            <Detail label="VAT number" value={account.vat_number} />
+            <Detail label="Client since" value={formatDate(account.client_since, "")} />
+            <div className="sm:col-span-2 lg:col-span-3">
+              <Detail label="Address" value={account.address} multiline />
+            </div>
+          </dl>
+          <p className="mt-6 border-t border-border pt-4 text-sm text-muted-foreground">
+            These appear on your invoices. Anything wrong or missing, tell us and we
+            will correct it. We never change your details without you asking.
+          </p>
+        </Panel>
+      </div>
+
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Panel title="Your plan">
           <p className="text-sm text-muted-foreground">
@@ -131,5 +151,37 @@ export default async function AccountPage() {
         </Panel>
       </div>
     </>
+  );
+}
+
+/**
+ * One detail, or an honest blank.
+ *
+ * A missing phone number shows as "Not given" rather than an empty space, so
+ * a client can see what we are missing and tell us.
+ */
+function Detail({
+  label,
+  value,
+  multiline = false,
+}: {
+  label: string;
+  value?: string | null;
+  multiline?: boolean;
+}) {
+  const text = (value ?? "").trim();
+  return (
+    <div>
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </dt>
+      <dd
+        className={`mt-1 text-sm ${text ? "" : "text-muted-foreground"} ${
+          multiline ? "whitespace-pre-line" : "break-words"
+        }`}
+      >
+        {text || "Not given"}
+      </dd>
+    </div>
   );
 }

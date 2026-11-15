@@ -4,11 +4,14 @@ from django.contrib.auth import get_user_model
 
 from .passwords import generate_password
 
+from .invoicing import raise_domain_renewal, raise_next_invoice
+
 from .models import (
     AddOn,
     ClientAccount,
     ContactInquiry,
     Invoice,
+    InvoiceLine,
     Payment,
     Plan,
     ProjectRequest,
@@ -122,27 +125,118 @@ class ClientAccountAdmin(admin.ModelAdmin):
         if obj is None:
             # A flat form on add: the user does not exist yet, so the normal
             # fieldsets would show a user picker that cannot be satisfied.
+            # A flat form, with everything an invoice will need, so a client
+            # can be set up completely in one pass rather than created and
+            # then edited again to fill in an address.
             return (
                 (
-                    "New client",
+                    "The login",
                     {
-                        "fields": ("client_name", "client_email", "company_name", "website_url"),
+                        "fields": ("client_name", "client_email"),
                         "description": (
                             "A login is created with a generated password, shown "
                             "once on the next screen."
                         ),
                     },
                 ),
+                (
+                    "Their business",
+                    {
+                        "fields": (
+                            "company_name",
+                            "contact_name",
+                            "phone",
+                            "website_url",
+                        )
+                    },
+                ),
+                (
+                    "Their domain",
+                    {
+                        "fields": ("domain", "domain_renews_on", "domain_fee"),
+                        "description": (
+                            "The first year is inside the setup fee. From year two it "
+                            "is invoiced once a year, so their monthly price never moves."
+                        ),
+                    },
+                ),
+                (
+                    "Invoice details",
+                    {
+                        "fields": ("billing_email", "address", "vat_number"),
+                        "description": (
+                            "Printed on every invoice. Leave blank and the invoice "
+                            "falls back to their login name and email."
+                        ),
+                    },
+                ),
                 ("What they pay for", {"fields": ("plan", "addons", "extra_services")}),
-                ("Billing", {"fields": ("monthly_fee_override", "next_payment_date", "status")}),
+                (
+                    "Billing",
+                    {
+                        "fields": (
+                            "monthly_fee_override",
+                            "client_since",
+                            "next_payment_date",
+                            "status",
+                        )
+                    },
+                ),
                 ("Internal", {"fields": ("notes",)}),
             )
         return super().get_fieldsets(request, obj)
+
 
     def get_readonly_fields(self, request, obj=None):
         if obj is None:
             return ()
         return self.readonly_fields
+
+    @admin.action(description="Raise the next invoice for the selected clients")
+    def raise_invoices(self, request, queryset):
+        """Bills the month ahead and moves the next payment date along.
+
+        The whole monthly job in one click. It refuses a client with nothing
+        to bill rather than raising an invoice for zero, and it will not
+        raise a second invoice for a period already billed.
+        """
+        raised, skipped = [], []
+        for account in queryset:
+            invoice = raise_next_invoice(account)
+            if invoice is None:
+                skipped.append(account.company_name)
+            else:
+                raised.append(f"{invoice.number} ({account.company_name}, {invoice.amount})")
+
+        if raised:
+            self.message_user(request, "Raised: " + "; ".join(raised))
+        if skipped:
+            self.message_user(
+                request,
+                "Nothing to bill for: "
+                + ", ".join(skipped)
+                + ". A client needs an active status and something to charge.",
+                level="warning",
+            )
+
+    @admin.action(description="Raise a domain renewal invoice")
+    def raise_domain_renewals(self, request, queryset):
+        raised = []
+        for account in queryset:
+            invoice = raise_domain_renewal(account)
+            if invoice is not None:
+                raised.append(f"{invoice.number} ({account.domain}, {invoice.amount})")
+        if raised:
+            self.message_user(request, "Raised: " + "; ".join(raised))
+        else:
+            self.message_user(
+                request,
+                "Nothing renewed. A client needs an active status, a domain and a "
+                "renewal date, and must not already have an invoice for it.",
+                level="warning",
+            )
+
+    actions = ["raise_invoices", "raise_domain_renewals"]
 
     def save_model(self, request, obj, form, change):
         if not change:
@@ -207,6 +301,12 @@ class PaymentInline(admin.TabularInline):
     fields = ("provider", "status", "amount", "provider_reference", "created_at")
     readonly_fields = fields
     can_delete = False
+
+
+class InvoiceLineInline(admin.TabularInline):
+    model = InvoiceLine
+    extra = 0
+    fields = ("description", "quantity", "unit_amount", "sort_order")
 
 
 @admin.register(Invoice)

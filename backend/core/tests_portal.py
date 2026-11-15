@@ -8,13 +8,14 @@ a login that can be triggered from a third-party page.
 import hashlib
 import hmac
 import json
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from .models import ClientAccount, Invoice, Payment, Plan
@@ -153,6 +154,95 @@ class PaymentSettlementTests(APITestCase):
         self.invoice.refresh_from_db()
         self.assertEqual(self.invoice.status, Invoice.Status.PAID)
 
+    @override_settings(
+        PAYSTACK_SECRET_KEY="sk_test_abc", PORTAL_URL="https://portal.example.com"
+    )
+    def test_the_customer_comes_back_through_the_view_that_confirms(self):
+        """The whole payment depends on this one URL.
+
+        If the callback points at the portal instead, the customer sees their
+        page, nothing asks Paystack what happened, and the invoice stays unpaid
+        until a webhook arrives. A webhook needs a public address with a real
+        certificate, which a new deployment may not have, so this is what makes
+        payments work at all.
+        """
+        self.client.force_login(self.user)
+        with mock.patch("core.paystack.initialize") as initialize:
+            initialize.return_value = {
+                "status": True,
+                "data": {"authorization_url": "https://paystack.test/x", "access_code": "a"},
+            }
+            response = self.client.post(reverse("invoice-pay", args=[self.invoice.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        callback = initialize.call_args[0][1]
+        self.assertEqual(
+            callback, "https://portal.example.com/api/billing/paystack/return/"
+        )
+
+    @override_settings(
+        PAYSTACK_SECRET_KEY="sk_test_abc", PORTAL_URL="https://portal.example.com"
+    )
+    def test_returning_settles_and_says_so(self):
+        payment = Payment.objects.create(
+            invoice=self.invoice, amount=Decimal("620.00"), currency="ZAR"
+        )
+        with mock.patch("core.paystack.verify") as verify:
+            verify.return_value = {
+                "status": True,
+                "data": {"status": "success", "amount": 62000, "currency": "ZAR"},
+            }
+            response = self.client.get(
+                reverse("paystack-return"), {"reference": payment.reference}
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response["Location"],
+            "https://portal.example.com/account/billing?payment=paid",
+        )
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, Invoice.Status.PAID)
+
+    @override_settings(
+        PAYSTACK_SECRET_KEY="sk_test_abc", PORTAL_URL="https://portal.example.com"
+    )
+    def test_an_unconfirmed_return_says_pending_not_failed(self):
+        """Telling someone it failed invites them to pay a second time."""
+        payment = Payment.objects.create(
+            invoice=self.invoice, amount=Decimal("620.00"), currency="ZAR"
+        )
+        with mock.patch("core.paystack.verify") as verify:
+            verify.return_value = {"status": True, "data": {"status": "abandoned"}}
+            response = self.client.get(
+                reverse("paystack-return"), {"reference": payment.reference}
+            )
+
+        self.assertEqual(
+            response["Location"],
+            "https://portal.example.com/account/billing?payment=pending",
+        )
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, Invoice.Status.DUE)
+
+    @override_settings(
+        PAYSTACK_SECRET_KEY="sk_test_abc", PORTAL_URL="https://portal.example.com"
+    )
+    def test_trxref_is_accepted_as_well_as_reference(self):
+        """Paystack sends both names for the same value."""
+        payment = Payment.objects.create(
+            invoice=self.invoice, amount=Decimal("620.00"), currency="ZAR"
+        )
+        with mock.patch("core.paystack.verify") as verify:
+            verify.return_value = {
+                "status": True,
+                "data": {"status": "success", "amount": 62000, "currency": "ZAR"},
+            }
+            self.client.get(reverse("paystack-return"), {"trxref": payment.reference})
+
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, Invoice.Status.PAID)
+
     @override_settings(PAYSTACK_SECRET_KEY="sk_test_abc")
     def test_invoice_is_not_settled_when_the_amount_does_not_match(self):
         """Stops a part payment, or a tampered one, clearing the whole invoice."""
@@ -233,3 +323,73 @@ class LoginCsrfTests(TestCase):
         )
         self.assertEqual(response.status_code, 401)
         self.assertNotIn("_auth_user_id", client.session)
+
+
+class ReconcilePaymentsTests(APITestCase):
+    """The safety net for a payment that succeeded but was never confirmed.
+
+    The customer closes the tab on their bank's page, or the webhook cannot
+    reach us because the site has no public certificate yet. Their money has
+    still gone. Without this, the invoice sits unpaid and somebody has to
+    notice by hand.
+    """
+
+    def setUp(self):
+        from django.core.management import call_command
+
+        self.call_command = call_command
+        plan = Plan.objects.create(
+            name="Plan", slug="plan-r", setup_fee=Decimal("500"), monthly_fee=Decimal("120")
+        )
+        user = User.objects.create_user("eve@example.com", "eve@example.com", "pw-eve-123")
+        account = ClientAccount.objects.create(user=user, company_name="Eve Ltd", plan=plan)
+        self.invoice = Invoice.objects.create(
+            account=account,
+            number="INV-R-1",
+            amount=Decimal("170.00"),
+            issued_on=date(2026, 11, 1),
+            due_on=date(2026, 11, 8),
+        )
+        self.payment = Payment.objects.create(
+            invoice=self.invoice, amount=Decimal("170.00"), currency="ZAR"
+        )
+        # Started a while ago, so it is past the grace period.
+        Payment.objects.filter(pk=self.payment.pk).update(
+            created_at=timezone.now() - timedelta(hours=2)
+        )
+
+    @override_settings(PAYSTACK_SECRET_KEY="sk_test_abc")
+    def test_settles_a_payment_that_succeeded_without_us_hearing(self):
+        with mock.patch("core.paystack.verify") as verify:
+            verify.return_value = {
+                "status": True,
+                "data": {"status": "success", "amount": 17000, "currency": "ZAR"},
+            }
+            self.call_command("reconcile_payments", verbosity=0)
+
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, Invoice.Status.PAID)
+
+    @override_settings(PAYSTACK_SECRET_KEY="sk_test_abc")
+    def test_leaves_an_abandoned_payment_alone(self):
+        with mock.patch("core.paystack.verify") as verify:
+            verify.return_value = {"status": True, "data": {"status": "abandoned"}}
+            self.call_command("reconcile_payments", verbosity=0)
+
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, Invoice.Status.DUE)
+
+    @override_settings(PAYSTACK_SECRET_KEY="sk_test_abc")
+    def test_does_not_disturb_someone_still_on_the_payment_page(self):
+        Payment.objects.filter(pk=self.payment.pk).update(created_at=timezone.now())
+        with mock.patch("core.paystack.verify") as verify:
+            self.call_command("reconcile_payments", verbosity=0)
+        verify.assert_not_called()
+
+    @override_settings(PAYSTACK_SECRET_KEY="")
+    def test_does_nothing_without_a_key(self):
+        with mock.patch("core.paystack.verify") as verify:
+            self.call_command("reconcile_payments", verbosity=0)
+        verify.assert_not_called()
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, Invoice.Status.DUE)

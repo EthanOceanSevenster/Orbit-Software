@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 
 from . import paystack
 from .models import Invoice, Payment
-from .serializers import InvoiceSerializer
+from .serializers import InvoiceDocumentSerializer, InvoiceSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,19 @@ class _ClientScopedMixin:
 
 class InvoiceListView(_ClientScopedMixin, generics.ListAPIView):
     serializer_class = InvoiceSerializer
+
+
+class InvoiceDetailView(_ClientScopedMixin, generics.RetrieveAPIView):
+    """One invoice, in full, for the document the client can print.
+
+    Scoped like every other billing view, so an id from the URL cannot reach
+    another client's invoice.
+    """
+
+    serializer_class = InvoiceDocumentSerializer
+
+    def get_queryset(self):
+        return super().get_queryset().prefetch_related("lines")
 
 
 class InvoicePayView(_ClientScopedMixin, APIView):
@@ -83,7 +96,13 @@ class InvoicePayView(_ClientScopedMixin, APIView):
             currency=invoice.currency,
         )
 
-        callback = f"{settings.PORTAL_URL}/account?payment={payment.reference}"
+        # Send them back through our own return view, not straight to the
+        # portal. That view is what asks Paystack whether the payment actually
+        # succeeded. Pointing this at the portal instead leaves an invoice
+        # unpaid until the webhook arrives, and a webhook needs a public
+        # address with a real certificate, which a new deployment may not have
+        # yet. Paystack appends ?reference= and ?trxref= to this URL.
+        callback = f"{settings.PORTAL_URL}/api/billing/paystack/return/"
         try:
             body = paystack.initialize(payment, callback)
         except Exception:  # noqa: BLE001 - the gateway's failure is not the client's problem
@@ -106,11 +125,25 @@ class InvoicePayView(_ClientScopedMixin, APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        payment.provider_reference = data.get("access_code", "")
+        access_code = data.get("access_code", "")
+        payment.provider_reference = access_code
         payment.provider_payload = body
         payment.save(update_fields=["provider_reference", "provider_payload", "updated_at"])
 
-        return Response({"configured": True, "ok": True, "authorization_url": url})
+        # access_code opens Paystack's panel over our own page, which keeps the
+        # customer on the site they recognise. authorization_url is the same
+        # transaction as a full page, kept as a fallback for when the script
+        # cannot load. Neither can be used to mark anything paid: that still
+        # takes a verified answer from Paystack.
+        return Response(
+            {
+                "configured": True,
+                "ok": True,
+                "access_code": access_code,
+                "reference": payment.reference,
+                "authorization_url": url,
+            }
+        )
 
 
 def settle(reference: str) -> bool:
@@ -203,7 +236,16 @@ class PaystackReturnView(APIView):
     permission_classes: list = []
 
     def get(self, request):
-        reference = request.query_params.get("reference", "")
-        if reference and paystack.is_configured():
-            settle(reference)
-        return redirect(f"{settings.PORTAL_URL}/account")
+        # Paystack sends both. trxref is the older name for the same value.
+        reference = (
+            request.query_params.get("reference")
+            or request.query_params.get("trxref")
+            or ""
+        )
+        settled = bool(reference) and paystack.is_configured() and settle(reference)
+
+        # "pending" rather than "failed": the customer may well have paid and
+        # the confirmation simply has not come back yet. Telling them it failed
+        # would invite a second payment.
+        outcome = "paid" if settled else "pending"
+        return redirect(f"{settings.PORTAL_URL}/account/billing?payment={outcome}")

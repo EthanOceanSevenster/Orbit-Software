@@ -17,6 +17,8 @@ export type AddOn = {
   slug: string;
   description: string;
   monthly_fee: number | string;
+  /** Once-off, charged on the first invoice. Absent or zero means none. */
+  setup_fee?: number | string;
   currency: string;
 };
 
@@ -34,6 +36,24 @@ export type ClientAccount = {
   status?: "pending" | "active" | "paused" | "cancelled";
   status_label?: string;
   services?: string[];
+  /** Who we deal with and where an invoice is addressed. */
+  contact_name?: string;
+  billing_email?: string;
+  phone?: string;
+  address?: string;
+  vat_number?: string;
+  client_since?: string | null;
+  /** Their own domain, and when we next renew it for them. */
+  domain?: string;
+  domain_renews_on?: string | null;
+  /** Where to pay by EFT. Blank fields mean it is not configured yet. */
+  pay_to?: {
+    name: string;
+    account_name: string;
+    account_number: string;
+    branch_code: string;
+    company_name: string;
+  };
 };
 
 export type Invoice = {
@@ -66,6 +86,8 @@ export const SERVICE_OPTIONS: { value: string; label: string }[] = [
   { value: "website", label: "A website" },
   { value: "redesign", label: "Website redesign" },
   { value: "dashboard", label: "Live dashboard" },
+  { value: "power_bi", label: "Power BI report" },
+  { value: "automation", label: "Automate a manual job" },
   { value: "marketing", label: "Marketing" },
   { value: "ecommerce", label: "Online shop" },
   { value: "seo", label: "SEO and search" },
@@ -134,4 +156,67 @@ export type StaffOverview = {
   requests: StaffServiceRequest[];
   payments: StaffInvoice[];
   unpaid: StaffInvoice[];
+};
+
+export type InvoiceLine = {
+  description: string;
+  quantity: string;
+  unit_amount: string;
+  amount: string;
+};
+
+/** One invoice in full, enough to render it as a document. */
+export type InvoiceDocument = {
+  id: number;
+  number: string;
+  description: string;
+  amount: string;
+  currency: string;
+  issued_on: string;
+  due_on: string;
+  period_start: string | null;
+  period_end: string | null;
+  period_label: string;
+  status: "draft" | "due" | "paid" | "overdue" | "void";
+  status_label: string;
+  is_payable: boolean;
+  paid_at: string | null;
+  lines: InvoiceLine[];
+  billed_to: {
+    company_name: string;
+    contact_name: string;
+    email: string;
+    phone: string;
+    address: string;
+    vat_number: string;
+  };
+  issued_by: {
+    company_name: string;
+    location: string;
+    email: string;
+    website: string;
+    vat_number: string;
+    bank: {
+      name: string;
+      account_name: string;
+      account_number: string;
+      branch_code: string;
+    };
+  };
+};
+
+/**
+ * A card the client has saved with Payfast.
+ *
+ * There is no card number here and never will be: Payfast holds the card and
+ * hands us a token, which is all this describes.
+ */
+export type SavedCard = {
+  has_card: boolean;
+  saved_at: string | null;
+  autopay: boolean;
+  /** Payfast's own page for changing the card behind the token. */
+  update_url: string;
+  /** The exact words the client agreed to when they saved it. */
+  consent_text: string;
 };

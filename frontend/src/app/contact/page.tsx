@@ -39,7 +39,7 @@ export default function ContactPage() {
     <>
       <PageHeader
         eyebrow="Contact"
-        title="Talk to our team"
+        title="Ask me anything"
         text="Questions about pricing, hosting or a project you have in mind? Send us a message and the right person will get back to you."
       />
 

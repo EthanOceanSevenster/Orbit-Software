@@ -7,26 +7,50 @@
  */
 export const site = {
   name: "Orbit Software",
-  legalName: "Orbit Software (Pty) Ltd",
-  tagline: "Websites built and hosted by a software team",
+  // Not "(Pty) Ltd": that claims a CIPC registration the business does not
+  // have, and the footer is the one place a customer looks for it. Change it
+  // back the day the company is registered.
+  legalName: "Orbit Software",
+  // One developer, said plainly and without a name. "A developer" is not an
+  // identity, so this stays anonymous while being true. The alternative was
+  // claiming a team, which the first reply from a one-person business
+  // immediately contradicts.
+  tagline: "Websites built and hosted by one developer, not a template shop",
   description:
-    "We design, build and host professional websites for businesses. One once-off setup fee, a low flat monthly fee, and a software team behind your site.",
+    "Professional websites for South African small businesses, designed, built and hosted by one developer. One once-off fee to get started, one flat monthly fee after that.",
   location: "South Africa",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   pricing: {
     currency: "ZAR",
-    /** Once-off, covers design and build. */
+    /**
+     * Once-off, and worth showing broken down.
+     *
+     * R500 on its own invites "what is the catch". R200 for your own domain
+     * plus R300 for the build answers that before it is asked, and the domain
+     * half is money we pass on rather than keep.
+     */
     setupFee: 500,
+    /** The domain, registered in the client's name. Part of the setup fee. */
+    domainFee: 200,
+    /** Designing and building the site. The rest of the setup fee. */
+    buildFee: 300,
     /** Monthly hosting, support, SSL and backups. */
     monthlyFee: 120,
-    /** Optional business email address on your own domain. */
+    /** Optional business email address on your own domain, per month. */
     emailAddonFee: 50,
+    /** Once-off, to create the mailbox and point the domain's mail records. */
+    emailSetupFee: 50,
     /** Hosting plus the business email add-on. */
     monthlyWithEmail: 170,
+    /** Email marketing: writing and sending campaigns, per month. */
+    marketingFee: 80,
+    /** Once-off, to build the list, verify a sending domain and design the template. */
+    marketingSetupFee: 400,
   },
   nav: [
     { href: "/services", label: "Services" },
     { href: "/#how-it-works", label: "How it works" },
+    { href: "/work", label: "Our work" },
     { href: "/pricing", label: "Pricing" },
     { href: "/#why-orbit", label: "Why Orbit" },
     { href: "/contact", label: "Contact" },

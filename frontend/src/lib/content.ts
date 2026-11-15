@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Store,
   UtensilsCrossed,
+  Workflow,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -66,6 +67,16 @@ export const FALLBACK_ADDONS: AddOn[] = [
     description:
       "An email address on your own domain, such as hello@yourbusiness.co.za, set up and managed for you.",
     monthly_fee: site.pricing.emailAddonFee,
+    setup_fee: site.pricing.emailSetupFee,
+    currency: site.pricing.currency,
+  },
+  {
+    name: "Email marketing",
+    slug: "email-marketing",
+    description:
+      "We write and send marketing emails to your customer list, and tell you afterwards how many opened them.",
+    monthly_fee: site.pricing.marketingFee,
+    setup_fee: site.pricing.marketingSetupFee,
     currency: site.pricing.currency,
   },
 ];
@@ -74,8 +85,8 @@ export const FALLBACK_ADDONS: AddOn[] = [
 export const TRUST_POINTS: IconItem[] = [
   { icon: ShieldCheck, title: "SSL on every site", text: "Encrypted and secure by default" },
   { icon: DatabaseBackup, title: "Automated backups", text: "Your content is always protected" },
-  { icon: Activity, title: "Uptime monitoring", text: "We watch your site so you don't have to" },
-  { icon: Headset, title: "Real support", text: "Talk to the team that built your site" },
+  { icon: Activity, title: "Uptime monitoring", text: "If it goes down I hear about it, not you" },
+  { icon: Headset, title: "One person to ask", text: "Email the developer who built your site" },
 ];
 
 export type Service = {
@@ -137,10 +148,24 @@ export const SERVICES: Service[] = [
     summary:
       "Live dashboards that pull your business numbers onto one screen, so you can see how things are going without digging through spreadsheets.",
     details: [
-      "Sales, traffic and performance in one view",
+      "Power BI, or a private dashboard on your own website",
+      "Sales, bookings, stock and cash in one view",
       "Pulls from the tools and spreadsheets you already use",
-      "Updates on its own, so nobody rebuilds a report every week",
-      "Private logins for you and your team",
+      "Refreshes on its own, so nobody rebuilds a report every week",
+    ],
+    included: false,
+  },
+  {
+    id: "automation",
+    icon: Workflow,
+    title: "Automation",
+    summary:
+      "The jobs you do every week by hand, done for you. Quotes, invoices, reminders, reports and the copying between systems that eats a morning.",
+    details: [
+      "Invoices and payment reminders that send themselves",
+      "Enquiries that land straight in your spreadsheet or inbox",
+      "Reports built and emailed on a schedule",
+      "Two systems kept in step without anyone retyping",
     ],
     included: false,
   },
@@ -183,14 +208,14 @@ export const JOURNEY: JourneyStep[] = [
   {
     icon: MessageSquare,
     title: "Tell us what you need",
-    text: "Fill in a short form or give us a call. We talk through what your business does and what the website should achieve.",
+    text: "Fill in a short form. Six questions, about two minutes. I read every one myself and reply by email.",
     actor: "you",
     effort: "About 10 minutes",
   },
   {
     icon: PenTool,
     title: "We design and build it",
-    text: "Our team designs your site and sends you a private preview link. You tell us what to change, and we change it.",
+    text: "I design and build your site, then send you a private preview link. You tell me what to change, and I change it.",
     actor: "us",
     effort: "We do the work",
   },
@@ -238,7 +263,7 @@ export const STEPS: IconItem[] = [
   {
     icon: PenTool,
     title: "We design and build",
-    text: "Our team designs and builds your website and sends you a preview link to review and comment on.",
+    text: "I design and build your website and send you a preview link to review and comment on.",
   },
   {
     icon: Rocket,
@@ -272,7 +297,7 @@ export const WHY_US: IconItem[] = [
   {
     icon: CodeXml,
     title: "Engineered, not templated",
-    text: "Your website is built by a software team, so it works properly, loads fast and can grow into something bigger later.",
+    text: "Your website is written by a developer, not assembled from a template, so it works properly, loads fast and can grow into something bigger later.",
   },
   {
     icon: Server,
@@ -289,7 +314,15 @@ export const WHY_US: IconItem[] = [
 export const FAQS = [
   {
     q: "What does the setup fee cover?",
-    a: "The once-off setup fee covers the design and build of your website and getting it live on our hosting.",
+    a: `It is two things. ${formatMoney(site.pricing.domainFee)} registers your domain, in your name, and ${formatMoney(site.pricing.buildFee)} covers designing and building your site and getting it live on our hosting.`,
+  },
+  {
+    q: `Why is the setup only ${formatMoney(site.pricing.setupFee)}?`,
+    a: `Because the monthly fee is where this works for us. Nearly half of it, ${formatMoney(site.pricing.domainFee)}, is your domain and we pass that on. A low build fee gets small businesses online without a large upfront cost, and we earn it back over the years you stay. We would rather have a client for five years than one big invoice.`,
+  },
+  {
+    q: "Who owns the website and the domain?",
+    a: "You do. The domain is registered in your name, not ours, and if you ever leave we hand over your site files. Nothing here holds you in place except the work being good.",
   },
   {
     q: "What does the monthly fee include?",
@@ -302,6 +335,10 @@ export const FAQS = [
   {
     q: "How long does a website take?",
     a: "It depends on the size of the site and how quickly we receive your content. We agree on a timeline with you before we start.",
+  },
+  {
+    q: "What happens to the domain after the first year?",
+    a: `Your first year is inside the ${formatMoney(site.pricing.setupFee)} setup fee. After that we invoice the renewal once a year, currently ${formatMoney(site.pricing.domainFee)}, separately from your monthly fee. Your monthly price never changes because of it.`,
   },
   {
     q: "Can I use my own domain?",

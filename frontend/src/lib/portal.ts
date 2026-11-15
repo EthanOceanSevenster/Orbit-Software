@@ -10,6 +10,8 @@ import { cache } from "react";
 import type {
   ClientAccount,
   Invoice,
+  InvoiceDocument,
+  SavedCard,
   ServiceRequest,
   StaffOverview,
 } from "@/lib/types";
@@ -50,6 +52,10 @@ export function fetchMyAccount(): Promise<Result<ClientAccount>> {
   return getAsUser<ClientAccount>("/api/auth/me/");
 }
 
+export function fetchSavedCard(): Promise<Result<SavedCard>> {
+  return getAsUser<SavedCard>("/api/billing/card/");
+}
+
 export function fetchMyInvoices(): Promise<Result<Invoice[]>> {
   return getAsUser<Invoice[]>("/api/billing/invoices/");
 }
@@ -68,3 +74,8 @@ export function fetchMyServiceRequests(): Promise<Result<ServiceRequest[]>> {
 export const fetchStaffOverview = cache(
   (): Promise<Result<StaffOverview>> => getAsUser<StaffOverview>("/api/staff/overview/"),
 );
+
+/** One invoice in full. 404 for an invoice that is not the caller's. */
+export function fetchMyInvoice(id: string): Promise<Result<InvoiceDocument>> {
+  return getAsUser<InvoiceDocument>(`/api/billing/invoices/${encodeURIComponent(id)}/`);
+}

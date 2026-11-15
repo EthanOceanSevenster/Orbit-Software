@@ -3,11 +3,14 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
+from django.conf import settings
+
 from .models import (
     AddOn,
     ClientAccount,
     ContactInquiry,
     Invoice,
+    InvoiceLine,
     Plan,
     ProjectRequest,
     ServiceRequest,
@@ -37,7 +40,7 @@ class PlanSerializer(serializers.ModelSerializer):
 class AddOnSerializer(serializers.ModelSerializer):
     class Meta:
         model = AddOn
-        fields = ["id", "name", "slug", "description", "monthly_fee", "currency"]
+        fields = ["id", "name", "slug", "description", "monthly_fee", "setup_fee", "currency"]
         read_only_fields = fields
 
 
@@ -85,9 +88,25 @@ class ClientAccountSerializer(serializers.ModelSerializer):
     plan_name = serializers.CharField(source="plan.name", read_only=True, default="")
     status_label = serializers.CharField(source="get_status_display", read_only=True)
 
+    contact_name = serializers.CharField(source="contact", read_only=True)
+    billing_email = serializers.CharField(source="invoice_email", read_only=True)
+    # Where to pay by EFT. The same settings that print on the invoice, so a
+    # client reading the portal and a client reading a PDF see one account.
+    pay_to = serializers.SerializerMethodField()
+
+    def get_pay_to(self, account) -> dict:
+        return {
+            "name": getattr(settings, "BANK_NAME", ""),
+            "account_name": getattr(settings, "BANK_ACCOUNT_NAME", ""),
+            "account_number": getattr(settings, "BANK_ACCOUNT_NUMBER", ""),
+            "branch_code": getattr(settings, "BANK_BRANCH_CODE", ""),
+            "company_name": settings.COMPANY_NAME,
+        }
+
     class Meta:
         model = ClientAccount
         fields = [
+            "pay_to",
             "company_name",
             "website_url",
             "plan_name",
@@ -97,6 +116,14 @@ class ClientAccountSerializer(serializers.ModelSerializer):
             "status",
             "status_label",
             "services",
+            "contact_name",
+            "billing_email",
+            "phone",
+            "address",
+            "vat_number",
+            "client_since",
+            "domain",
+            "domain_renews_on",
         ]
         read_only_fields = fields
 
@@ -295,3 +322,79 @@ class StaffInvoiceSerializer(serializers.ModelSerializer):
             "paid_at",
         ]
         read_only_fields = fields
+
+
+class InvoiceLineSerializer(serializers.ModelSerializer):
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = InvoiceLine
+        fields = ["description", "quantity", "unit_amount", "amount"]
+        read_only_fields = fields
+
+
+class InvoiceDocumentSerializer(serializers.ModelSerializer):
+    """Everything needed to render one invoice as a document.
+
+    Carries both sides: who it is from, who it is to, what it buys and how to
+    pay it. The client's own details come from their account rather than being
+    typed per invoice, so correcting an address fixes every future invoice.
+    """
+
+    lines = InvoiceLineSerializer(many=True, read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    is_payable = serializers.BooleanField(read_only=True)
+    period_label = serializers.CharField(read_only=True)
+    billed_to = serializers.SerializerMethodField()
+    issued_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Invoice
+        fields = [
+            "id",
+            "number",
+            "description",
+            "amount",
+            "currency",
+            "issued_on",
+            "due_on",
+            "period_start",
+            "period_end",
+            "period_label",
+            "status",
+            "status_label",
+            "is_payable",
+            "paid_at",
+            "lines",
+            "billed_to",
+            "issued_by",
+        ]
+        read_only_fields = fields
+
+    def get_billed_to(self, invoice) -> dict:
+        account = invoice.account
+        return {
+            "company_name": account.company_name,
+            "contact_name": account.contact,
+            "email": account.invoice_email,
+            "phone": account.phone,
+            "address": account.address,
+            "vat_number": account.vat_number,
+        }
+
+    def get_issued_by(self, invoice) -> dict:
+        # Blank values are dropped by the page rather than printed as empty
+        # rows, so a half-configured bank block never reaches a client.
+        return {
+            "company_name": settings.COMPANY_NAME,
+            "location": getattr(settings, "COMPANY_LOCATION", ""),
+            "email": getattr(settings, "PUBLIC_EMAIL", ""),
+            "website": getattr(settings, "COMPANY_WEBSITE", ""),
+            "vat_number": getattr(settings, "COMPANY_VAT_NUMBER", ""),
+            "bank": {
+                "name": getattr(settings, "BANK_NAME", ""),
+                "account_name": getattr(settings, "BANK_ACCOUNT_NAME", ""),
+                "account_number": getattr(settings, "BANK_ACCOUNT_NUMBER", ""),
+                "branch_code": getattr(settings, "BANK_BRANCH_CODE", ""),
+            },
+        }

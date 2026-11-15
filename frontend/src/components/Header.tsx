@@ -85,10 +85,10 @@ export function Header() {
     !href.includes("#") && (pathname === href || pathname.startsWith(`${href}/`));
 
   const navLinkClass = (active: boolean) =>
-    `relative flex h-full items-center px-3 text-sm font-medium transition-colors hover:text-white ${
+    `relative flex h-full items-center px-3 text-sm font-medium transition-colors hover:text-foreground ${
       active
-        ? "text-white after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-sky-400"
-        : "text-slate-300"
+        ? "text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-brand"
+        : "text-muted-foreground"
     }`;
 
   return (
@@ -127,14 +127,18 @@ export function Header() {
       </div>
 
       {/* Main navigation */}
+      {/* The chrome follows the theme. A navy bar pinned to the top of a white
+          page reads as a site that has not really switched. The hero band
+          below it stays navy on purpose: that is the brand, not the
+          furniture. */}
       <header
-        className={`sticky top-0 z-50 text-white transition-[background-color,box-shadow] duration-300 ${
-          scrolled ? "bg-navy/80 shadow-lg shadow-black/25 backdrop-blur-xl" : "bg-navy"
+        className={`sticky top-0 z-50 border-b border-border text-foreground transition-[background-color,box-shadow] duration-300 ${
+          scrolled ? "bg-card/80 shadow-lg shadow-black/5 backdrop-blur-xl" : "bg-card"
         }`}
       >
         <div className={`${containerClass} flex h-[76px] items-center justify-between`}>
           <div className="flex h-full items-center gap-8">
-            <Logo inverse />
+            <Logo />
 
             <nav className="hidden h-full items-center lg:flex" aria-label="Main">
               <div
@@ -269,9 +273,9 @@ export function Header() {
           <div className="hidden items-center gap-2 lg:flex">
             <Link
               href="/contact"
-              className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              Contact sales
+              Ask a question
             </Link>
             <ButtonLink href={account.href} size="sm" className="shadow-lg shadow-brand/30">
               <account.icon className="h-4 w-4" aria-hidden="true" /> {account.label}
@@ -280,7 +284,7 @@ export function Header() {
 
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-white hover:bg-white/10 lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground hover:bg-muted lg:hidden"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
@@ -300,9 +304,9 @@ export function Header() {
           <nav
             id="mobile-nav"
             aria-label="Mobile"
-            className="menu-pop max-h-[calc(100vh-76px)] overflow-y-auto border-t border-white/10 bg-navy px-4 pb-6 pt-4 lg:hidden"
+            className="menu-pop max-h-[calc(100vh-76px)] overflow-y-auto border-t border-border bg-card px-4 pb-6 pt-4 lg:hidden"
           >
-            <p className="px-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            <p className="px-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Services
             </p>
             <ul className="mt-2 space-y-1">
@@ -311,22 +315,22 @@ export function Header() {
                   <Link
                     href={`/services#${service.id}`}
                     onClick={closeAll}
-                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-slate-200 hover:bg-white/10"
+                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-foreground hover:bg-muted"
                   >
-                    <service.icon className="h-5 w-5 text-sky-300" aria-hidden="true" />
+                    <service.icon className="h-5 w-5 text-brand-ink" aria-hidden="true" />
                     {service.title}
                   </Link>
                 </li>
               ))}
             </ul>
-            <ul className="mt-4 space-y-1 border-t border-white/10 pt-4">
+            <ul className="mt-4 space-y-1 border-t border-border pt-4">
               {LINKS.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     onClick={closeAll}
-                    className={`block rounded-md px-3 py-2.5 text-base font-medium hover:bg-white/10 ${
-                      isActive(item.href) ? "text-white" : "text-slate-300"
+                    className={`block rounded-md px-3 py-2.5 text-base font-medium hover:bg-muted ${
+                      isActive(item.href) ? "text-foreground" : "text-muted-foreground"
                     }`}
                   >
                     {item.label}
@@ -337,10 +341,10 @@ export function Header() {
             <Link
               href="/contact"
               onClick={closeAll}
-              className="mt-4 flex items-center gap-3 rounded-md border-t border-white/10 px-3 pt-4 text-base font-medium text-slate-300 hover:text-white"
+              className="mt-4 flex items-center gap-3 rounded-md border-t border-border px-3 pt-4 text-base font-medium text-muted-foreground hover:text-foreground"
             >
-              <Mail className="h-5 w-5 text-sky-300" aria-hidden="true" />
-              Contact sales
+              <Mail className="h-5 w-5 text-brand-ink" aria-hidden="true" />
+              Ask a question
             </Link>
             <ButtonLink href={account.href} className="mt-5 w-full" onClick={closeAll}>
               <account.icon className="h-4 w-4" aria-hidden="true" /> {account.label}

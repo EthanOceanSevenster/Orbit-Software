@@ -18,7 +18,7 @@ export function CtaBand() {
             <p className="mt-4 text-lg leading-relaxed text-slate-300">
               {formatMoney(site.pricing.setupFee)} once-off to build it, then{" "}
               {formatMoney(site.pricing.monthlyFee)} a month for hosting and support. Tell us about
-              your project and our team will take it from there.
+              your project and I will take it from there.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -26,7 +26,7 @@ export function CtaBand() {
               Get started <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </ButtonLink>
             <ButtonLink href="/contact" variant="outlineInverse" size="lg">
-              <MessageSquare className="h-4 w-4" aria-hidden="true" /> Talk to sales
+              <MessageSquare className="h-4 w-4" aria-hidden="true" /> Ask a question
             </ButtonLink>
           </div>
         </div>

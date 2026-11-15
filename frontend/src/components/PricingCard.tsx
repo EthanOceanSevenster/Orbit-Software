@@ -1,7 +1,7 @@
 import { ArrowRight, CircleCheck, Plus } from "lucide-react";
 
 import { ButtonLink } from "@/components/Button";
-import { formatMoney } from "@/lib/site";
+import { formatMoney, site } from "@/lib/site";
 import type { AddOn, Plan } from "@/lib/types";
 
 export function PricingCard({
@@ -40,9 +40,26 @@ export function PricingCard({
           <span className="text-muted-foreground">/ month</span>
         </div>
 
-        <div className="mt-5 flex items-center justify-between rounded-lg bg-muted px-4 py-3 text-sm">
-          <span className="text-muted-foreground">Once-off setup fee</span>
-          <span className="font-semibold">{formatMoney(plan.setup_fee, plan.currency)}</span>
+        {/* Broken down on purpose. R500 on its own invites "what is the
+            catch"; saying that R200 of it is their own domain answers that
+            before anyone has to ask, and it is the half we pass on. */}
+        <div className="mt-5 rounded-lg bg-muted px-4 py-3 text-sm">
+          <div className="flex items-center justify-between font-semibold">
+            <span>Once-off to get started</span>
+            <span>{formatMoney(plan.setup_fee, plan.currency)}</span>
+          </div>
+          <dl className="mt-2.5 space-y-1.5 border-t border-border pt-2.5 text-xs">
+            <div className="flex items-center justify-between">
+              <dt className="text-muted-foreground">
+                Your domain, registered in your name
+              </dt>
+              <dd>{formatMoney(site.pricing.domainFee)}</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-muted-foreground">Designing and building your site</dt>
+              <dd>{formatMoney(site.pricing.buildFee)}</dd>
+            </div>
+          </dl>
         </div>
 
         <ButtonLink href={`/get-started?plan=${plan.slug}`} size="lg" className="mt-6 w-full">
@@ -88,9 +105,14 @@ export function PricingCard({
                       ) : null}
                     </span>
                   </span>
-                  <span className="shrink-0 text-sm font-semibold">
+                  <span className="shrink-0 text-right text-sm font-semibold">
                     {formatMoney(addon.monthly_fee, addon.currency)}
                     <span className="font-normal text-muted-foreground"> /mo</span>
+                    {Number(addon.setup_fee ?? 0) > 0 ? (
+                      <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                        + {formatMoney(addon.setup_fee ?? 0, addon.currency)} once-off
+                      </span>
+                    ) : null}
                   </span>
                 </li>
               ))}

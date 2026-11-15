@@ -38,8 +38,25 @@ DEFAULT_ADDONS = [
             "set up and managed for you."
         ),
         "monthly_fee": Decimal("50.00"),
+        # Creating the mailbox and changing the domain's mail records is work
+        # that happens once.
+        "setup_fee": Decimal("50.00"),
         "currency": "ZAR",
         "sort_order": 0,
+    },
+    {
+        "slug": "email-marketing",
+        "name": "Email marketing",
+        "description": (
+            "We write and send marketing emails to your customer list, and tell "
+            "you afterwards how many opened them."
+        ),
+        "monthly_fee": Decimal("80.00"),
+        # Building the list, verifying a sending domain and designing the
+        # template is most of the work, and it is done once.
+        "setup_fee": Decimal("400.00"),
+        "currency": "ZAR",
+        "sort_order": 1,
     },
 ]
 

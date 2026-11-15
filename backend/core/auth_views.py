@@ -198,3 +198,25 @@ class RegisterView(APIView):
         )
 
         return Response(_account_payload(user), status=status.HTTP_201_CREATED)
+
+
+class SessionView(APIView):
+    """Who is looking at the page, answerable by anyone.
+
+    Separate from MeView, which 401s an anonymous caller because the portal
+    treats that as "go and sign in". The header asks this on every public page,
+    and a 401 there puts a red error in the browser console of every visitor
+    who is not signed in. Not being signed in is a normal answer, not a fault.
+
+    Deliberately tells an anonymous caller nothing except that they are
+    anonymous.
+    """
+
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"signed_in": False, "is_staff": False})
+        return Response({"signed_in": True, "is_staff": bool(user.is_staff)})

@@ -12,7 +12,6 @@ import { ButtonLink } from "@/components/Button";
 import { Container } from "@/components/Container";
 import { LogoMark } from "@/components/Logo";
 import { OrbitBackground } from "@/components/OrbitBackground";
-import { site } from "@/lib/site";
 
 const HIGHLIGHTS = ["Hosting & SSL included", "One flat monthly fee", "Real people for support"];
 
@@ -27,16 +26,16 @@ export function Hero() {
             Website design · Managed hosting · Support
           </p>
           <h1 className="mt-7 text-[2.75rem] font-semibold leading-[1.08] tracking-tight sm:text-6xl lg:text-[4rem]">
-            Your business website, built and run by a{" "}
+            Your business website, built and run by{" "}
             <span className="bg-gradient-to-r from-sky-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
-              software team
+              one developer
             </span>
             .
           </h1>
           <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-300 sm:text-xl">
-            {site.name} designs, builds and hosts professional websites for growing businesses.
-            One once-off setup fee, one flat monthly fee, and a team of engineers looking after
-            your site.
+            No agency, no account manager, no template. The person who designs and
+            builds your site is the person who hosts it and answers when you need
+            something changed.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <ButtonLink href="/get-started" size="lg">
@@ -78,7 +77,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 function HeroConsole() {
   return (
     <div className="relative mx-auto w-full max-w-2xl" aria-hidden="true">
-      <div className="rounded-xl border border-white/10 bg-[#0b1a36]/90 shadow-2xl shadow-black/40 backdrop-blur">
+      <div className="rounded-xl border border-white/10 bg-[#0e0e11]/95 shadow-2xl shadow-black/40 backdrop-blur">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <LogoMark className="h-5 w-5" />
@@ -98,7 +97,7 @@ function HeroConsole() {
               key={label}
               className="rounded-xl border border-white/10 bg-white/[0.04] p-5 transition-colors hover:border-white/20"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand/45 to-sky-400/15 text-sky-300 ring-1 ring-inset ring-white/15">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand/25 to-sky-400/5 text-sky-300 ring-1 ring-inset ring-white/15">
                 <Icon className="h-5 w-5" strokeWidth={1.75} />
               </span>
               <p className="mt-4 text-xs text-slate-400">{label}</p>

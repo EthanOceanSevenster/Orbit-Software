@@ -22,7 +22,7 @@ export default function GetStartedPage() {
       <PageHeader
         eyebrow="Get started"
         title="Tell us about your website"
-        text="A few details are all we need. Our team will come back to you to confirm the scope before any work starts."
+        text="A few details are all I need. I come back to you to confirm the scope and the price before any work starts."
       />
 
       <section className="bg-muted py-16 sm:py-20">

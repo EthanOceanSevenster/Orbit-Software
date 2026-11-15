@@ -20,3 +20,7 @@ frontend/next-env.d.ts
 Thumbs.db
 .vscode/
 .idea/
+
+# Business documents, not code. Kept out of the repository so the published
+# source never carries pricing proposals or internal planning.
+/*.pdf

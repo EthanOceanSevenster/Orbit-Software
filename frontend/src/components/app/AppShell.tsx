@@ -19,6 +19,7 @@ import { useState, type ReactNode } from "react";
 
 import { Logo } from "@/components/Logo";
 import { LogoutButton } from "@/components/portal/LogoutButton";
+import { ThemeSwitch } from "@/components/ThemeToggle";
 
 /**
  * Icons are named rather than passed.
@@ -86,19 +87,16 @@ export function AppShell({
             aria-current={active ? "page" : undefined}
             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
               active
-                ? "bg-white/10 text-white"
-                : "text-slate-300 hover:bg-white/5 hover:text-white"
+                ? "bg-brand-soft text-brand-ink"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            <Icon
-              className={`h-4.5 w-4.5 shrink-0 ${active ? "text-sky-300" : ""}`}
-              aria-hidden="true"
-            />
+            <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
             <span className="flex-1">{item.label}</span>
             {item.badge ? (
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  active ? "bg-sky-400/20 text-sky-200" : "bg-white/10 text-slate-300"
+                  active ? "bg-brand text-brand-foreground" : "bg-muted text-muted-foreground"
                 }`}
               >
                 {item.badge}
@@ -111,25 +109,28 @@ export function AppShell({
   );
 
   const foot = (
-    <div className="border-t border-white/10 p-4">
-      <Link
-        href="/"
-        onClick={() => setOpen(false)}
-        className="block rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-      >
-        Back to the website
-      </Link>
-      <div className="mt-2 px-1">
-        <LogoutButton />
+    <div className="space-y-4 border-t border-border p-4">
+      <ThemeSwitch />
+      <div>
+        <Link
+          href="/"
+          onClick={() => setOpen(false)}
+          className="block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          Back to the website
+        </Link>
+        <div className="mt-2 px-1">
+          <LogoutButton />
+        </div>
       </div>
     </div>
   );
 
   return (
     <div className="flex min-h-screen bg-muted">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-white/10 bg-navy lg:flex">
-        <div className="flex h-[76px] items-center border-b border-white/10 px-6">
-          <Logo inverse />
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-card lg:flex">
+        <div className="flex h-[76px] items-center border-b border-border px-6">
+          <Logo />
         </div>
         <div className="flex-1 overflow-y-auto p-4">{nav}</div>
         {foot}
@@ -143,14 +144,18 @@ export function AppShell({
             className="absolute inset-0 bg-black/60"
             onClick={() => setOpen(false)}
           />
-          <aside className="menu-pop absolute inset-y-0 left-0 flex w-72 flex-col bg-navy">
-            <div className="flex h-[76px] items-center justify-between border-b border-white/10 px-5">
-              <Logo inverse />
+          {/* The drawer draws its own edge. On a dark page the black backdrop
+              barely darkens anything, so without a border the panel and the
+              page behind it are the same near-black and the drawer has no
+              visible edge at all. */}
+          <aside className="menu-pop absolute inset-y-0 left-0 flex w-72 flex-col border-r border-border bg-card">
+            <div className="flex h-[76px] items-center justify-between border-b border-border px-5">
+              <Logo />
               <button
                 type="button"
                 aria-label="Close menu"
                 onClick={() => setOpen(false)}
-                className="rounded-md p-2 text-white hover:bg-white/10"
+                className="rounded-md p-2 text-foreground hover:bg-muted"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -171,7 +176,7 @@ export function AppShell({
           >
             <Menu className="h-5 w-5" />
           </button>
-          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <p className="flex-1 text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             {items.find(isActive)?.label ?? eyebrow}
           </p>
         </header>

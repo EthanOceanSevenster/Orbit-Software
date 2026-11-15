@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Empty, PageHeading, Panel } from "@/components/console/parts";
+import { Empty, PageHeading, Panel, formatDate } from "@/components/console/parts";
 import { fetchMyAccount } from "@/lib/portal";
 
 export const instant = false;
@@ -80,6 +80,33 @@ export default async function WebsitePage() {
           </Empty>
         )}
       </Panel>
+
+      {account.domain ? (
+        <div className="mt-6">
+          <Panel title="Your domain">
+            <div className="flex flex-wrap items-start justify-between gap-6">
+              <div>
+                <p className="text-lg font-semibold">{account.domain}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Registered in your name, not ours. If you ever leave, it goes with you.
+                </p>
+              </div>
+              {account.domain_renews_on ? (
+                <div className="text-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Renews
+                  </p>
+                  <p className="mt-1 font-medium">{formatDate(account.domain_renews_on)}</p>
+                </div>
+              ) : null}
+            </div>
+            <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">
+              The first year is part of your setup fee. After that we invoice the
+              renewal once a year, separately, so your monthly fee never changes.
+            </p>
+          </Panel>
+        </div>
+      ) : null}
 
       <div className="mt-6">
         <Panel title="What we look after">

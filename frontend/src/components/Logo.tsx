@@ -11,7 +11,8 @@ import { site } from "@/lib/site";
  * prints in a single ink. Do not add gradients, strokes or glow.
  *
  * The knockout has to match whatever sits behind the mark, so pass `onNavy` in
- * the dark header. Anywhere else the default white is correct.
+ * the dark header. Everywhere else it follows the card colour, which is white
+ * in light mode and dark in dark mode, so the mark works in both.
  */
 export function LogoMark({
   className = "h-9 w-9",
@@ -21,7 +22,7 @@ export function LogoMark({
   onNavy?: boolean;
 }) {
   const tile = onNavy ? "#2f7bff" : "#0b5fff";
-  const knockout = onNavy ? "#071630" : "#ffffff";
+  const knockout = onNavy ? "#071630" : "var(--card)";
 
   return (
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
