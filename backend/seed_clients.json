@@ -11,7 +11,12 @@
     ],
     "next_payment_date": "2026-11-30",
     "password": "Mimshack2026!",
-    "reset_password": true
+    "reset_password": true,
+    "invoice": {
+      "amount": "250.00",
+      "due": "2026-11-30",
+      "description": "Hosting, business email and email marketing"
+    }
   },
   {
     "name": "Tabita Kwatsha",

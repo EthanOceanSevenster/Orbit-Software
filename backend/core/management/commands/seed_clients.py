@@ -43,7 +43,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from core.models import AddOn, ClientAccount, Plan
+from core.models import AddOn, ClientAccount, Invoice, Plan
 from core.passwords import generate_password
 
 User = get_user_model()
@@ -130,6 +130,10 @@ class Command(BaseCommand):
                 )
             else:
                 self.stdout.write(f"{email} already exists, left alone.")
+
+            account = ClientAccount.objects.filter(user=existing).first()
+            if account is not None:
+                self.raise_invoice(account, entry)
             return False
 
         plan = None
@@ -198,4 +202,51 @@ class Command(BaseCommand):
                 f"next {account.next_payment_date})"
             )
         )
+        self.raise_invoice(account, entry)
         return True
+
+    def raise_invoice(self, account: ClientAccount, entry: dict) -> None:
+        """Raise the invoice described in the entry, once.
+
+        Keyed on the due date and amount: run the deploy again and it finds
+        the invoice already there rather than billing the client twice, which
+        is the only mistake here that costs somebody money.
+        """
+        spec = entry.get("invoice")
+        if not isinstance(spec, dict):
+            return
+
+        try:
+            amount = Decimal(str(spec.get("amount", account.monthly_total)))
+            due_on = date.fromisoformat(str(spec["due"]))
+        except (InvalidOperation, KeyError, ValueError):
+            self.stderr.write(f"Invoice for {account.company_name} is malformed. Skipping.")
+            return
+
+        if Invoice.objects.filter(account=account, due_on=due_on, amount=amount).exists():
+            self.stdout.write(f"{account.company_name} already has that invoice.")
+            return
+
+        number = spec.get("number") or (
+            f"INV-{due_on:%Y%m}-{account.pk:04d}"
+        )
+        if Invoice.objects.filter(number=number).exists():
+            self.stdout.write(f"Invoice {number} already exists.")
+            return
+
+        invoice = Invoice.objects.create(
+            account=account,
+            number=number,
+            description=str(spec.get("description", "")) or "Hosting and support",
+            amount=amount,
+            currency=account.currency,
+            issued_on=date.today(),
+            due_on=due_on,
+            status=Invoice.Status.DUE,
+        )
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Raised {invoice.number} for {account.company_name}: "
+                f"{invoice.currency} {invoice.amount} due {invoice.due_on}"
+            )
+        )
