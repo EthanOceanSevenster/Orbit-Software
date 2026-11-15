@@ -22,6 +22,10 @@ python manage.py seed_plans
 # no-op once the account exists and never resets an existing password.
 python manage.py bootstrap_admin
 
+# Create the owner logins listed in seed_staff.json. Same rules: makes what
+# is missing, never touches what is there, prints a generated password once.
+python manage.py seed_staff
+
 # Create any clients listed in SEED_CLIENTS that do not exist yet. Also a
 # no-op on every deploy after the first, and it never edits a client who is
 # already there: a deploy must never reset a paying customer's password or
