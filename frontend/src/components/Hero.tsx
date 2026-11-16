@@ -1,16 +1,11 @@
 import {
-  Activity,
   ArrowRight,
   CircleCheck,
-  DatabaseBackup,
-  Gauge,
-  Rocket,
-  ShieldCheck,
 } from "lucide-react";
 
 import { ButtonLink } from "@/components/Button";
 import { Container } from "@/components/Container";
-import { LogoMark } from "@/components/Logo";
+import { HeroScene } from "@/components/HeroScene";
 import { OrbitBackground } from "@/components/OrbitBackground";
 
 const HIGHLIGHTS = ["Hosting & SSL included", "One flat monthly fee", "Real people for support"];
@@ -26,15 +21,16 @@ export function Hero() {
             Website design · Managed hosting · Support
           </p>
           <h1 className="mt-7 text-[2.75rem] font-semibold leading-[1.08] tracking-tight sm:text-6xl lg:text-[4rem]">
-            Your business website, built and run by{" "}
+            Website design and hosting for{" "}
             <span className="bg-gradient-to-r from-sky-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
-              one developer
-            </span>
-            .
+              South African
+            </span>{" "}
+            small businesses.
           </h1>
           <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-300 sm:text-xl">
-            No agency, no account manager, no template. The person who designs and
-            builds your site is the person who hosts it and answers when you need
+            Designed, built and hosted by one developer, for one once-off fee and
+            one monthly fee. No agency, no account manager, no template, and the
+            person who builds your site is the person who answers when you need
             something changed.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
@@ -56,89 +52,9 @@ export function Hero() {
         </div>
 
         <div className="lg:col-span-6 xl:col-span-7">
-          <HeroConsole />
+          <HeroScene />
         </div>
       </Container>
     </section>
-  );
-}
-
-const STATUS_TILES = [
-  { icon: ShieldCheck, label: "SSL certificate", value: "Active" },
-  { icon: DatabaseBackup, label: "Backups", value: "Automated" },
-  { icon: Gauge, label: "Performance", value: "Optimised" },
-  { icon: Activity, label: "Uptime monitoring", value: "Enabled" },
-];
-
-const BARS = [38, 52, 46, 64, 58, 82, 74];
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-/** Decorative "cloud console" illustration of a hosted site. */
-function HeroConsole() {
-  return (
-    <div className="relative mx-auto w-full max-w-2xl" aria-hidden="true">
-      <div className="rounded-xl border border-white/10 bg-[#0e0e11]/95 shadow-2xl shadow-black/40 backdrop-blur">
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <LogoMark className="h-5 w-5" />
-            <span className="font-medium text-slate-200">Orbit Console</span>
-            <span className="text-slate-600">/</span>
-            <span>yourbusiness.co.za</span>
-          </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            Online
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 p-6">
-          {STATUS_TILES.map(({ icon: Icon, label, value }) => (
-            <div
-              key={label}
-              className="rounded-xl border border-white/10 bg-white/[0.04] p-5 transition-colors hover:border-white/20"
-            >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand/25 to-sky-400/5 text-sky-300 ring-1 ring-inset ring-white/15">
-                <Icon className="h-5 w-5" strokeWidth={1.75} />
-              </span>
-              <p className="mt-4 text-xs text-slate-400">{label}</p>
-              <p className="mt-1 text-sm font-semibold text-white">{value}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="border-t border-white/10 p-5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400">Visitors this week</span>
-            <span className="text-emerald-300">Trending up</span>
-          </div>
-          <div className="mt-4 flex h-24 items-end gap-2">
-            {BARS.map((height, i) => (
-              <div
-                key={DAYS[i]}
-                className="flex-1 rounded-sm bg-gradient-to-t from-brand to-sky-400"
-                style={{ height: `${height}%` }}
-              />
-            ))}
-          </div>
-          <div className="mt-2 flex justify-between text-[10px] text-slate-500">
-            {DAYS.map((day) => (
-              <span key={day} className="flex-1 text-center">
-                {day}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute -bottom-7 -left-7 hidden items-center gap-3 rounded-xl border border-white/10 bg-navy-2 px-5 py-4 shadow-2xl shadow-black/40 sm:flex">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/25">
-          <Rocket className="h-5 w-5" strokeWidth={1.75} />
-        </span>
-        <div className="text-xs">
-          <p className="font-semibold text-white">Site deployed</p>
-          <p className="text-slate-400">Live, hosted and backed up</p>
-        </div>
-      </div>
-    </div>
   );
 }

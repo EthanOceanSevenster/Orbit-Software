@@ -20,7 +20,7 @@ export function PlainAnswer() {
             In plain English
           </p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            You need a website. We handle all of it.
+            A website for your business, handled end to end.
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
             There is nothing for you to install, host or maintain. You tell us about your

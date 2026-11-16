@@ -87,7 +87,7 @@ export function AppShell({
             aria-current={active ? "page" : undefined}
             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
               active
-                ? "bg-brand-soft text-brand-ink"
+                ? "bg-white/10 text-foreground ring-1 ring-inset ring-white/15 dark:bg-white/10"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
@@ -127,8 +127,8 @@ export function AppShell({
   );
 
   return (
-    <div className="flex min-h-screen bg-muted">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-card lg:flex">
+    <div className="galaxy flex min-h-screen">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-card/70 backdrop-blur-xl lg:flex">
         <div className="flex h-[76px] items-center border-b border-border px-6">
           <Logo />
         </div>
@@ -148,7 +148,7 @@ export function AppShell({
               barely darkens anything, so without a border the panel and the
               page behind it are the same near-black and the drawer has no
               visible edge at all. */}
-          <aside className="menu-pop absolute inset-y-0 left-0 flex w-72 flex-col border-r border-border bg-card">
+          <aside className="menu-pop absolute inset-y-0 left-0 flex w-72 flex-col border-r border-border bg-card/95 backdrop-blur-xl">
             <div className="flex h-[76px] items-center justify-between border-b border-border px-5">
               <Logo />
               <button
@@ -180,7 +180,7 @@ export function AppShell({
             {items.find(isActive)?.label ?? eyebrow}
           </p>
         </header>
-        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+        <main className="relative flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>
   );

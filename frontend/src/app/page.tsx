@@ -45,7 +45,7 @@ export default function HomePage() {
         <Container className="relative">
           <SectionHeading
             eyebrow="What we do"
-            title="Everything your website needs, from one team"
+            title="Web design, hosting and support in one place"
             text="One person and one monthly fee, instead of a designer, a host and a support company who all blame each other."
           />
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -86,7 +86,7 @@ export default function HomePage() {
         <Container>
           <SectionHeading
             eyebrow="Who we work with"
-            title="Built for businesses like yours"
+            title="Websites for South African small businesses"
             text="Whatever your industry, we build a website that explains what you do and makes it easy for customers to get in touch."
           />
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -104,7 +104,7 @@ export default function HomePage() {
         <Container>
           <SectionHeading
             eyebrow="Recent work"
-            title="Sites we have built and still run"
+            title="Recent websites we have built and host"
             text="Live businesses, not mock-ups. Click through and judge them yourself."
           />
           <div className="mt-12">
@@ -132,7 +132,7 @@ export default function HomePage() {
             invert
             eyebrow={`Why ${site.name.split(" ")[0]}`}
             title="A developer, not a template shop"
-            text="We bring engineering discipline to every website we build, then stay with you for the long run."
+            text="Built properly rather than assembled from a template, and looked after every month afterwards."
           />
           <div className="mt-14 grid gap-6 md:grid-cols-3">
             {WHY_US.map((item) => (

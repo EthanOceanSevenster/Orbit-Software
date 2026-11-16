@@ -17,7 +17,10 @@ export const site = {
   // immediately contradicts.
   tagline: "Websites built and hosted by one developer, not a template shop",
   description:
-    "Professional websites for South African small businesses, designed, built and hosted by one developer. One once-off fee to get started, one flat monthly fee after that.",
+    "Website design and hosting for South African small businesses. R500 once-off to build it, R120 a month for hosting, SSL, backups and support. Built and looked after by one developer.",
+  /** Used as the <title> on the home page and in search results. */
+  searchTitle:
+    "Website Design & Hosting in South Africa | R500 setup, R120/month",
   location: "South Africa",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   pricing: {
@@ -42,6 +45,13 @@ export const site = {
     emailSetupFee: 50,
     /** Hosting plus the business email add-on. */
     monthlyWithEmail: 170,
+    /** A Power BI report built, hosted and refreshed. */
+    dashboardSetupFee: 300,
+    dashboardMonthlyFee: 120,
+    /** Same-day answers and first place in the queue. */
+    prioritySupportFee: 100,
+    /** One written answer to a question about their numbers. Charged once. */
+    dataAnalysisFee: 950,
     /** Email marketing: writing and sending campaigns, per month. */
     marketingFee: 80,
     /** Once-off, to build the list, verify a sending domain and design the template. */

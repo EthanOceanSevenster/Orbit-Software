@@ -27,6 +27,49 @@ DEFAULT_PLANS = [
         "is_featured": True,
         "sort_order": 0,
     },
+    {
+        "slug": "dashboard-and-reporting",
+        "name": "Dashboard & Reporting",
+        "tagline": "Your business numbers on one screen, kept up to date.",
+        "description": (
+            "We build a Power BI report from the data you already have, then host "
+            "it and refresh it every month so the numbers are never stale."
+        ),
+        "setup_fee": Decimal("300.00"),
+        "monthly_fee": Decimal("120.00"),
+        "currency": "ZAR",
+        "features": [
+            "A report built around the questions you actually ask",
+            "Hosted and refreshed every month",
+            "Works from a spreadsheet, a till system or your website",
+            "Opens on a phone as well as a laptop",
+            "Changes to the report included",
+        ],
+        "is_featured": False,
+        "sort_order": 1,
+    },
+    {
+        "slug": "mobile-app-build-and-hosting",
+        "name": "Mobile App Build & Hosting",
+        "tagline": "An app built to your specification, published and looked after.",
+        "description": (
+            "We build your app from a written specification, put it on the "
+            "Google Play Store and keep it running. Google's developer fee and "
+            "any paid services the app uses are billed to you directly."
+        ),
+        "setup_fee": Decimal("1500.00"),
+        "monthly_fee": Decimal("500.00"),
+        "currency": "ZAR",
+        "features": [
+            "Built to a written specification you sign off",
+            "Android and iPhone from one build",
+            "Hosting, monitoring and updates every month",
+            "Publishing to the Google Play Store quoted on top",
+            "API keys and paid services are billed to you directly",
+        ],
+        "is_featured": False,
+        "sort_order": 2,
+    },
 ]
 
 DEFAULT_ADDONS = [
@@ -57,6 +100,32 @@ DEFAULT_ADDONS = [
         "setup_fee": Decimal("400.00"),
         "currency": "ZAR",
         "sort_order": 1,
+    },
+    {
+        "slug": "priority-support",
+        "name": "Priority support",
+        "description": (
+            "Same-day answers on working days and first place in the queue for "
+            "changes, instead of the usual two."
+        ),
+        "monthly_fee": Decimal("100.00"),
+        "setup_fee": Decimal("0.00"),
+        "currency": "ZAR",
+        "sort_order": 2,
+    },
+    {
+        "slug": "data-analysis",
+        "name": "Data analysis, once off",
+        "description": (
+            "A written answer to a question about your numbers: what sells, when, "
+            "to whom, and what it costs you. Charged once, not monthly."
+        ),
+        # Nothing monthly: this is a piece of work, not a subscription, and a
+        # zero means the card shows the once-off fee alone.
+        "monthly_fee": Decimal("0.00"),
+        "setup_fee": Decimal("950.00"),
+        "currency": "ZAR",
+        "sort_order": 3,
     },
 ]
 

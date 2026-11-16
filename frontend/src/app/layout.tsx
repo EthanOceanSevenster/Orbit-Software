@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { SiteChrome } from "@/components/SiteChrome";
+import { StructuredData } from "@/components/StructuredData";
 import { THEME_SCRIPT } from "@/components/ThemeToggle";
 import { site } from "@/lib/site";
 
@@ -22,16 +23,37 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} | ${site.tagline}`,
+    // What a search result says. The name alone sells nothing to somebody
+    // who has never heard of us; the service, the place and the price do.
+    default: site.searchTitle,
     template: `%s | ${site.name}`,
   },
   description: site.description,
+  keywords: [
+    "website design South Africa",
+    "small business website",
+    "web design and hosting",
+    "managed website hosting",
+    "affordable website South Africa",
+    "website developer South Africa",
+  ],
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
+    locale: "en_ZA",
+    url: "/",
     siteName: site.name,
-    title: `${site.name} | ${site.tagline}`,
+    title: site.searchTitle,
     description: site.description,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: site.name }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: site.searchTitle,
+    description: site.description,
+    images: ["/og.png"],
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -53,6 +75,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             theme script runs. */}
         <meta name="color-scheme" content="dark light" />
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <StructuredData />
       </head>
       {/* suppressHydrationWarning: browser extensions add attributes to <body> before React hydrates. */}
       <body className="flex min-h-full flex-col" suppressHydrationWarning>

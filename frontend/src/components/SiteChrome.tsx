@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { ChatWidget } from "@/components/ChatWidget";
+
 /**
  * Decides whether a page gets the public site's header and footer.
  *
@@ -38,6 +40,7 @@ export function SiteChrome({
       {header}
       <main className="flex-1">{children}</main>
       {footer}
+      <ChatWidget />
     </>
   );
 }

@@ -6,11 +6,14 @@ import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/Button";
 import { Field, FormAlert, inputClass } from "@/components/forms/shared";
+import { WelcomeSplash } from "@/components/forms/WelcomeSplash";
 import { login } from "@/lib/portal-client";
 
 export function LoginForm() {
   const router = useRouter();
-  const [status, setStatus] = useState<"idle" | "submitting">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "welcome">(
+    "idle",
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -25,10 +28,28 @@ export function LoginForm() {
 
     const result = await login(email, password);
     if (result.ok) {
-      // refresh() re-runs the server components so the portal reads the new
-      // session straight away instead of showing a stale signed-out view.
-      router.replace("/account");
-      router.refresh();
+      /*
+       * The screen is taken over, and the wait is filled rather than hidden.
+       * Being thrown straight at a dashboard reads as a page change; this
+       * reads as being let in. The route is fetched during it, so the two
+       * seconds buy something instead of only costing.
+       */
+      setStatus("welcome");
+      router.prefetch("/account");
+
+      /*
+       * No fade on the way out, deliberately. The splash lives in this page's
+       * tree, so fading it before navigating reveals the login form again for
+       * a third of a second, which is the white-flash problem wearing a hat.
+       * It holds at full strength until the portal replaces it, and both are
+       * dark, so there is nothing to flash.
+       */
+      window.setTimeout(() => {
+        // refresh() re-runs the server components so the portal reads the new
+        // session straight away instead of showing a stale signed-out view.
+        router.replace("/account");
+        router.refresh();
+      }, 2000);
       return;
     }
     setStatus("idle");
@@ -36,53 +57,66 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      {message ? <FormAlert kind="error">{message}</FormAlert> : null}
+    <>
+      {status === "welcome" ? <WelcomeSplash /> : null}
 
-      <Field label="Email" name="email" errors={{}} required>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          autoFocus
-          placeholder="you@example.com"
-          className={inputClass}
-        />
-      </Field>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        {message ? <FormAlert kind="error">{message}</FormAlert> : null}
 
-      <Field label="Password" name="password" errors={{}} required>
-        <div className="relative">
+        <Field label="Email" name="email" errors={{}} required>
           <input
-            id="password"
-            name="password"
-            type={showPassword ? "text" : "password"}
+            id="email"
+            name="email"
+            type="email"
             required
-            autoComplete="current-password"
-            placeholder="Your password"
-            className={`${inputClass} pr-12`}
+            autoComplete="email"
+            autoFocus
+            placeholder="you@example.com"
+            className={inputClass}
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-            className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground hover:text-foreground"
-          >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-      </Field>
+        </Field>
 
-      <Button type="submit" size="lg" disabled={status === "submitting"} className="w-full">
-        {status === "submitting" ? "Signing in..." : "Sign in"}
-        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </Button>
+        <Field label="Password" name="password" errors={{}} required>
+          <div className="relative">
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              autoComplete="current-password"
+              placeholder="Your password"
+              className={`${inputClass} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </Field>
 
-      <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />
-        Your session is stored in a secure cookie, never in the page.
-      </p>
-    </form>
+        <Button
+          type="submit"
+          size="lg"
+          disabled={status !== "idle"}
+          className="w-full"
+        >
+          {status === "idle" ? "Sign in" : "Signing in..."}
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Button>
+
+        <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />
+          Your session is stored in a secure cookie, never in the page.
+        </p>
+      </form>
+    </>
   );
 }

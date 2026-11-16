@@ -11,6 +11,7 @@ import {
   RequestsList,
   StatCard,
 } from "@/components/console/parts";
+import { TodayLine } from "@/components/console/TodayLine";
 import { fetchStaffOverview } from "@/lib/portal";
 import { formatMoney } from "@/lib/site";
 
@@ -33,41 +34,62 @@ export default async function OverviewPage() {
     <>
       <PageHeading
         title="Overview"
-        lead="How the business stands today: who is on the books, what has come in, and who is waiting on you."
+        lead="Where the business stands today, and anything that needs you."
       />
+
+      {/* The answer first. The numbers underneath are the detail. */}
+      <div className="mb-6">
+        <TodayLine
+          clients={totals.clients}
+          overdueCount={totals.overdue_invoices}
+          overdueAmount={totals.outstanding}
+          outstanding={totals.outstanding}
+          openRequests={totals.open_requests}
+          currency={currency}
+          money={formatMoney}
+        />
+      </div>
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={Users}
-          label="Clients"
-          value={String(totals.clients)}
-          note={`${totals.by_status.active ?? 0} active, ${totals.by_status.pending ?? 0} pending`}
+          label="Clients paying you"
+          value={String(totals.by_status.active ?? 0)}
+          note={
+            (totals.by_status.pending ?? 0) > 0
+              ? `${totals.by_status.pending} still to be set up`
+              : "Everyone is set up and live"
+          }
           href="/dashboard/clients"
         />
         <StatCard
           icon={Banknote}
-          label="Paid this month"
+          label="Money in this month"
           value={formatMoney(totals.received_this_month, currency)}
-          note={`${formatMoney(totals.received_total, currency)} received in total`}
+          note={`${formatMoney(totals.received_total, currency)} since you started`}
           href="/dashboard/payments"
         />
         <StatCard
           icon={CircleDollarSign}
-          label="Owed to you"
+          label="Still to be paid"
           value={formatMoney(totals.outstanding, currency)}
           note={
             totals.overdue_invoices > 0
-              ? `${totals.overdue_invoices} overdue`
-              : "Nothing overdue"
+              ? `${totals.overdue_invoices} of them are late`
+              : "All of it is still inside its due date"
           }
           alert={totals.overdue_invoices > 0}
           href="/dashboard/payments"
         />
         <StatCard
           icon={Inbox}
-          label="Requests"
+          label="Asking for work"
           value={String(totals.open_requests)}
-          note={totals.open_requests > 0 ? "Waiting on you" : "All answered"}
+          note={
+            totals.open_requests > 0
+              ? "Waiting for you to reply"
+              : "Nobody is waiting on you"
+          }
           alert={totals.open_requests > 0}
           href="/dashboard/requests"
         />
@@ -75,7 +97,7 @@ export default async function OverviewPage() {
 
       <div className="mt-6 space-y-6">
         <Panel
-          title="Expected every month"
+          title="You should receive this every month"
           action={
             <p className="text-2xl font-semibold tracking-tight">
               {formatMoney(totals.monthly_recurring, currency)}

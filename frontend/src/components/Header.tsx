@@ -93,12 +93,12 @@ export function Header() {
 
   return (
     <>
-      {/* Announcement strip. It sells the offer, so it is for visitors who
-          have not bought yet; a signed-in client has. */}
+      {/* Announcement strip. Shown to everybody, signed in or not: it is the
+          offer, and the owner wants it on the page at all times. It no longer
+          depends on the session, so it cannot appear and then vanish when the
+          answer about who is looking arrives. */}
       <div
-        className={`bg-gradient-to-r from-[#0038b8] via-brand to-[#0e7490] text-white ${
-          session.signedIn ? "hidden" : ""
-        }`}
+        className="bg-gradient-to-r from-[#0038b8] via-brand to-[#0e7490] text-white"
       >
         <div className={`${containerClass} flex h-11 items-center justify-center gap-6 text-xs sm:text-sm lg:justify-between`}>
           <Link href="/get-started" className="group flex items-center gap-2 font-medium">
@@ -277,9 +277,16 @@ export function Header() {
             >
               Ask a question
             </Link>
-            <ButtonLink href={account.href} size="sm" className="shadow-lg shadow-brand/30">
-              <account.icon className="h-4 w-4" aria-hidden="true" /> {account.label}
-            </ButtonLink>
+            {session.loading ? (
+              <span
+                aria-hidden="true"
+                className="h-9 w-[7.5rem] animate-pulse rounded-lg bg-muted"
+              />
+            ) : (
+              <ButtonLink href={account.href} size="sm" className="shadow-lg shadow-brand/30">
+                <account.icon className="h-4 w-4" aria-hidden="true" /> {account.label}
+              </ButtonLink>
+            )}
           </div>
 
           <button
@@ -346,9 +353,16 @@ export function Header() {
               <Mail className="h-5 w-5 text-brand-ink" aria-hidden="true" />
               Ask a question
             </Link>
-            <ButtonLink href={account.href} className="mt-5 w-full" onClick={closeAll}>
-              <account.icon className="h-4 w-4" aria-hidden="true" /> {account.label}
-            </ButtonLink>
+            {session.loading ? (
+              <span
+                aria-hidden="true"
+                className="mt-5 block h-11 w-full animate-pulse rounded-lg bg-muted"
+              />
+            ) : (
+              <ButtonLink href={account.href} className="mt-5 w-full" onClick={closeAll}>
+                <account.icon className="h-4 w-4" aria-hidden="true" /> {account.label}
+              </ButtonLink>
+            )}
           </nav>
         ) : null}
       </header>

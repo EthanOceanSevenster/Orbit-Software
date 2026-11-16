@@ -7,6 +7,12 @@ import { Logo } from "@/components/Logo";
 import { SERVICES } from "@/lib/content";
 import { formatMoney, publicEmail, site } from "@/lib/site";
 
+const LEGAL_LINKS = [
+  { href: "/terms", label: "Terms" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/refund-policy", label: "Refunds" },
+];
+
 const COMPANY_LINKS = [
   { href: "/pricing", label: "Pricing" },
   { href: "/#why-orbit", label: "Why Orbit" },
@@ -73,8 +79,16 @@ export function Footer() {
       <div className="border-t border-white/10">
         <Container className="flex flex-col gap-3 py-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            &copy; <CopyrightYear /> {site.legalName}. All rights reserved. Prices in South African Rand (ZAR).
+            &copy; <CopyrightYear /> {site.legalName}. Prices in South African Rand (ZAR).
           </p>
+
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Legal">
+            {LEGAL_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} className="hover:text-white">
+                {link.label}
+              </Link>
+            ))}
+          </nav>
           <a href="#" className="inline-flex items-center gap-1.5 hover:text-white">
             Back to top <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
           </a>

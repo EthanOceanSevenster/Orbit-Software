@@ -162,6 +162,204 @@ body {
     var(--navy);
 }
 
+/*
+ * The console and portal background: deep space rather than a blue panel.
+ *
+ * Two very faint nebulas and a starfield over near black. The stars are the
+ * same ones the marketing hero uses, so the two halves of the product look
+ * like one product. Light theme gets none of it: a starfield on white reads
+ * as dirt on the screen.
+ */
+.galaxy {
+  position: relative;
+  background:
+    radial-gradient(70% 55% at 85% -5%, rgba(79, 70, 229, 0.16), transparent 60%),
+    radial-gradient(55% 45% at 5% 100%, rgba(14, 116, 144, 0.12), transparent 60%),
+    var(--background);
+}
+
+.galaxy::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 120px 80px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1.5px 1.5px at 200px 160px, rgba(186, 230, 253, 0.45), transparent),
+    radial-gradient(1px 1px at 310px 40px, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 380px 210px, rgba(255, 255, 255, 0.25), transparent),
+    radial-gradient(1.5px 1.5px at 60px 250px, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 260px 290px, rgba(186, 230, 253, 0.3), transparent);
+  background-size: 420px 320px;
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent 70%);
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+}
+
+:root[data-theme="light"] .galaxy {
+  background: var(--muted);
+}
+:root[data-theme="light"] .galaxy::before {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* The hero scene: a wireframe planet with satellites around it          */
+/* ------------------------------------------------------------------ */
+/*
+ * Real perspective, not a drawing of it. The globe's meridians and parallels
+ * stand in actual 3D space, so they cross in front of and behind each other
+ * as it turns, and a satellite genuinely disappears behind the planet.
+ */
+.scene {
+  perspective: 1000px;
+}
+
+.scene-glow {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(11, 95, 255, 0.3),
+    rgba(11, 95, 255, 0.1) 35%,
+    transparent 62%
+  );
+}
+
+.scene-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transform-style: preserve-3d;
+  animation: scene-lean 22s ease-in-out infinite;
+}
+
+/* --- the planet --------------------------------------------------- */
+/*
+ * A lit sphere with a surface that scrolls past, which is what actually
+ * reads as a turning planet. The wireframe version looked like an egg in a
+ * cage: meridian circles seen at an angle become ellipses that spill past
+ * the body, and no amount of perspective fixes that.
+ */
+.globe {
+  position: absolute;
+  height: 196px;
+  width: 196px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: #0a1b3c;
+  box-shadow:
+    /* terminator: the unlit side */
+    inset -22px -12px 42px rgba(0, 0, 0, 0.8),
+    /* the lit edge facing the star */
+    inset 16px 12px 34px rgba(150, 200, 255, 0.45),
+    /* atmosphere */
+    0 0 0 1px rgba(146, 186, 255, 0.22),
+    0 0 70px rgba(11, 95, 255, 0.45);
+}
+
+/* The surface. Two bands of soft blobs at different speeds, so the planet
+   reads as turning rather than sliding. */
+.globe::before,
+.globe::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background-repeat: repeat;
+  animation: surface-turn 26s linear infinite;
+}
+
+.globe::before {
+  background-image:
+    radial-gradient(38px 22px at 20% 38%, rgba(56, 189, 248, 0.85), transparent 70%),
+    radial-gradient(52px 26px at 62% 58%, rgba(14, 165, 233, 0.7), transparent 72%),
+    radial-gradient(30px 18px at 88% 30%, rgba(125, 211, 252, 0.8), transparent 70%);
+  background-size: 70% 100%;
+}
+
+.globe::after {
+  background-image:
+    radial-gradient(26px 15px at 35% 70%, rgba(186, 230, 253, 0.55), transparent 70%),
+    radial-gradient(38px 17px at 78% 20%, rgba(96, 165, 250, 0.5), transparent 72%);
+  background-size: 55% 100%;
+  animation-duration: 38s;
+  animation-direction: reverse;
+}
+
+/* A highlight that does not move, because the light source does not. */
+.globe-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 32% 26%,
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0.05) 32%,
+    transparent 58%
+  );
+}
+
+@keyframes surface-turn {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 200% 0%;
+  }
+}
+
+/* --- the orbits --------------------------------------------------- */
+.orbit {
+  position: absolute;
+  border-radius: 9999px;
+  border: 1px solid rgba(156, 196, 255, 0.22);
+  transform-style: preserve-3d;
+  transform: var(--tilt);
+  animation: orbit-spin var(--spin) linear infinite;
+}
+
+/* Each body carries its own colour and its own light. */
+.satellite {
+  position: absolute;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85), transparent 55%),
+    var(--body, #bae6fd);
+  box-shadow:
+    0 0 18px 5px var(--glow, rgba(56, 189, 248, 0.55)),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.45);
+}
+
+@keyframes orbit-spin {
+  from {
+    transform: var(--tilt) rotateZ(0deg);
+  }
+  to {
+    transform: var(--tilt) rotateZ(360deg);
+  }
+}
+
+/* The whole system leans, so it never looks like a flat badge spinning on
+   the spot. */
+@keyframes scene-lean {
+  0%,
+  100% {
+    transform: rotateX(5deg) rotateY(-7deg);
+  }
+  50% {
+    transform: rotateX(-5deg) rotateY(7deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-stage,
+  .globe,
+  .globe::before,
+  .globe::after,
+  .orbit {
+    animation: none;
+  }
+}
+
 /* Faint grid laid over dark sections */
 .hero-grid {
   background-image:
@@ -272,6 +470,207 @@ body {
     animation: none;
   }
   .orbit-satellites {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Signing in: the welcome                                              */
+/* ------------------------------------------------------------------ */
+/*
+ * The moment between typing a password and seeing a dashboard.
+ *
+ * Done badly it is a flicker and a page swap, and being let into your own
+ * system feels like clicking a link. This takes the whole screen for two
+ * seconds: the mark arrives, a ring sweeps round it, three rings go out
+ * like a signal being picked up, and the name lands. By the time the bar
+ * finishes filling, the portal behind it has already been fetched.
+ *
+ * It is also honest cover for real work \u2014 prefetching the route and
+ * re-running the server components \u2014 so the two seconds are not wasted,
+ * they are the two seconds that would otherwise have been a white flash.
+ */
+.welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  animation: welcome-fade-in 260ms ease-out both;
+  /* Always dark, whichever theme is on. A light splash with white text is
+     unreadable, and this is the one screen that is ours, not theirs. */
+  background:
+    radial-gradient(70% 55% at 85% -5%, rgba(79, 70, 229, 0.22), transparent 60%),
+    radial-gradient(55% 45% at 5% 100%, rgba(14, 116, 144, 0.18), transparent 60%),
+    #07070a;
+}
+
+.welcome::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 120px 80px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1.5px 1.5px at 200px 160px, rgba(186, 230, 253, 0.45), transparent),
+    radial-gradient(1px 1px at 310px 40px, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 380px 210px, rgba(255, 255, 255, 0.25), transparent),
+    radial-gradient(1.5px 1.5px at 60px 250px, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 260px 290px, rgba(186, 230, 253, 0.3), transparent);
+  background-size: 420px 320px;
+}
+
+/* The stage the mark sits on, so the whole group can lift together. */
+.welcome-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 0 1.5rem;
+}
+
+/* The mark, arriving. */
+.welcome-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 7rem;
+  height: 7rem;
+  animation: welcome-mark-in 760ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+}
+
+/* The sweep: a single bright arc going round the mark, once a second. */
+.welcome-sweep {
+  position: absolute;
+  inset: -0.75rem;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 250deg,
+    rgba(125, 211, 252, 0.08) 300deg,
+    rgba(125, 211, 252, 0.85) 352deg,
+    transparent 360deg
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+  animation: welcome-sweep 1100ms linear 200ms infinite;
+}
+
+/* Three rings going outward, staggered, like a signal being picked up. */
+.welcome-ring {
+  position: absolute;
+  inset: -0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(125, 211, 252, 0.5);
+  animation: welcome-ring-out 1800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.welcome-ring:nth-child(2) {
+  animation-delay: 420ms;
+}
+.welcome-ring:nth-child(3) {
+  animation-delay: 700ms;
+}
+
+/* The words, landing after the mark rather than with it. */
+.welcome-title {
+  animation: welcome-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) 520ms both;
+}
+.welcome-sub {
+  animation: welcome-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) 700ms both;
+}
+
+/* The bar, which finishes exactly as the portal appears. */
+.welcome-bar {
+  overflow: hidden;
+  border-radius: 9999px;
+  animation: welcome-rise 500ms ease-out 760ms both;
+}
+.welcome-bar span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  animation: welcome-bar 1180ms cubic-bezier(0.4, 0, 0.2, 1) 820ms both;
+}
+
+@keyframes welcome-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes welcome-mark-in {
+  from {
+    opacity: 0;
+    transform: scale(0.55) rotate(-28deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes welcome-sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes welcome-ring-out {
+  from {
+    opacity: 0.75;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+@keyframes welcome-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes welcome-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/*
+ * Asked for less movement: no sweep, no rings, no rise. The screen still
+ * takes over and still says the same words, because that part is the
+ * message, not the decoration.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .welcome,
+  .welcome-mark,
+  .welcome-title,
+  .welcome-sub,
+  .welcome-bar,
+  .welcome-bar span {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .welcome-sweep,
+  .welcome-ring {
     display: none;
   }
 }

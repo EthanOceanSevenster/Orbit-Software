@@ -13,6 +13,15 @@ export function PricingCard({
   addons?: AddOn[];
   highlight?: boolean;
 }) {
+  /*
+   * The domain-plus-build breakdown belongs to the website plan, where those
+   * two numbers are the whole setup fee. On a plan priced differently it was
+   * printing figures that did not add up to the total above them, which is
+   * worse than printing nothing, so it only appears when it reconciles.
+   */
+  const breakdown = site.pricing.domainFee + site.pricing.buildFee;
+  const showBreakdown = Number(plan.setup_fee) === breakdown;
+
   return (
     <div
       className={`relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-xl shadow-slate-900/5 ${
@@ -44,22 +53,24 @@ export function PricingCard({
             catch"; saying that R200 of it is their own domain answers that
             before anyone has to ask, and it is the half we pass on. */}
         <div className="mt-5 rounded-lg bg-muted px-4 py-3 text-sm">
-          <div className="flex items-center justify-between font-semibold">
+          <div className="flex items-center justify-between gap-3 font-semibold">
             <span>Once-off to get started</span>
-            <span>{formatMoney(plan.setup_fee, plan.currency)}</span>
+            <span className="shrink-0">{formatMoney(plan.setup_fee, plan.currency)}</span>
           </div>
-          <dl className="mt-2.5 space-y-1.5 border-t border-border pt-2.5 text-xs">
-            <div className="flex items-center justify-between">
-              <dt className="text-muted-foreground">
-                Your domain, registered in your name
-              </dt>
-              <dd>{formatMoney(site.pricing.domainFee)}</dd>
-            </div>
-            <div className="flex items-center justify-between">
-              <dt className="text-muted-foreground">Designing and building your site</dt>
-              <dd>{formatMoney(site.pricing.buildFee)}</dd>
-            </div>
-          </dl>
+          {showBreakdown ? (
+            <dl className="mt-2.5 space-y-1.5 border-t border-border pt-2.5 text-xs">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">
+                  Your domain, registered in your name
+                </dt>
+                <dd className="shrink-0">{formatMoney(site.pricing.domainFee)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Designing and building your site</dt>
+                <dd className="shrink-0">{formatMoney(site.pricing.buildFee)}</dd>
+              </div>
+            </dl>
+          ) : null}
         </div>
 
         <ButtonLink href={`/get-started?plan=${plan.slug}`} size="lg" className="mt-6 w-full">

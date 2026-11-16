@@ -17,7 +17,7 @@ export function Journey() {
       <Container>
         <SectionHeading
           eyebrow="How it works"
-          title="From first message to a site that runs itself"
+          title="How we design, build and host your website"
           text="Four stages, and you are only involved in the first one. Here is exactly what happens and who does it."
         />
 

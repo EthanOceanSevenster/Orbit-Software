@@ -29,15 +29,40 @@ const REQUEST_STATUS: Record<string, string> = {
   done: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
 };
 
-export function formatDate(value?: string | null, fallback = "Not set"): string {
-  if (!value) return fallback;
+function parseDate(value?: string | null): Date | null {
+  if (!value) return null;
   const date = new Date(value.length > 10 ? value : `${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatDate(value?: string | null, fallback = "Not set"): string {
+  const date = parseDate(value);
+  if (!date) return value || fallback;
   return date.toLocaleDateString("en-ZA", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
+}
+
+/**
+ * A due date said the way a person would say it.
+ *
+ * "22 Nov 2026" makes you count on your fingers. "In 6 days" does not, and
+ * "5 days late" is the only version of it that produces a phone call.
+ */
+export function dueIn(value?: string | null): string | null {
+  const due = parseDate(value);
+  if (!due) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  const days = Math.round((due.getTime() - today.getTime()) / 86400000);
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  if (days > 1) return `in ${days} days`;
+  if (days === -1) return "1 day late";
+  return `${Math.abs(days)} days late`;
 }
 
 export function Pill({
@@ -81,9 +106,9 @@ export function Panel({
   action?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-6 sm:p-7">
+    <section className="rounded-2xl border border-border bg-card p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
         {action}
       </div>
       <div className="mt-5">{children}</div>
@@ -92,7 +117,7 @@ export function Panel({
 }
 
 export function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>;
+  return <p className="text-sm leading-relaxed text-muted-foreground">{children}</p>;
 }
 
 export function StatCard({
@@ -113,25 +138,41 @@ export function StatCard({
   const body = (
     <>
       <IconBadge icon={icon} />
-      <p className="mt-5 text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
+      <p className="mt-4 text-sm text-muted-foreground sm:mt-5">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{value}</p>
       <p
-        className={`mt-2 flex items-center gap-1.5 text-xs ${
+        className={`mt-2 flex items-start gap-1.5 text-xs leading-relaxed ${
           alert ? "font-medium text-amber-600 dark:text-amber-400" : "text-muted-foreground"
         }`}
       >
-        {alert ? <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : null}
+        {alert ? (
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        ) : null}
         {note}
       </p>
     </>
   );
 
-  const shell = "rounded-2xl border border-border bg-card p-6";
+  const shell = "rounded-2xl border border-border bg-card p-5 sm:p-6";
   if (!href) return <div className={shell}>{body}</div>;
   return (
     <Link href={href} className={`${shell} block transition-colors hover:border-brand/40`}>
       {body}
     </Link>
+  );
+}
+
+function WebsiteLink({ url }: { url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand-ink hover:underline"
+    >
+      {url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+      <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+    </a>
   );
 }
 
@@ -155,8 +196,8 @@ export function ClientsTable({ clients }: { clients: StaffClient[] }) {
               <th className="pb-3 pr-4 font-semibold">Client</th>
               <th className="pb-3 pr-4 font-semibold">Status</th>
               <th className="pb-3 pr-4 font-semibold">Plan</th>
-              <th className="pb-3 pr-4 text-right font-semibold">Monthly</th>
-              <th className="pb-3 pr-4 text-right font-semibold">Owed</th>
+              <th className="pb-3 pr-4 text-right font-semibold">Pays a month</th>
+              <th className="pb-3 pr-4 text-right font-semibold">Owes you</th>
               <th className="pb-3 font-semibold">Next payment</th>
             </tr>
           </thead>
@@ -166,28 +207,19 @@ export function ClientsTable({ clients }: { clients: StaffClient[] }) {
                 <td className="py-4 pr-4">
                   <p className="font-medium">{client.company_name}</p>
                   <p className="text-xs text-muted-foreground">{client.contact_email}</p>
-                  {client.website_url ? (
-                    <a
-                      href={client.website_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand-ink hover:underline"
-                    >
-                      {client.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                    </a>
-                  ) : null}
+                  {client.website_url ? <WebsiteLink url={client.website_url} /> : null}
                 </td>
                 <td className="py-4 pr-4">
                   <Pill status={client.status} label={client.status_label} />
                   {client.open_requests > 0 ? (
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                      {client.open_requests} request{client.open_requests === 1 ? "" : "s"}
+                      Asking for {client.open_requests} thing
+                      {client.open_requests === 1 ? "" : "s"}
                     </p>
                   ) : null}
                 </td>
                 <td className="py-4 pr-4 text-muted-foreground">
-                  {client.plan_name || "No plan"}
+                  {client.plan_name || "No plan yet"}
                 </td>
                 <td className="py-4 pr-4 text-right font-medium">
                   {formatMoney(client.monthly_total, client.currency)}
@@ -198,7 +230,7 @@ export function ClientsTable({ clients }: { clients: StaffClient[] }) {
                       {formatMoney(client.outstanding, client.currency)}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">&mdash;</span>
+                    <span className="text-muted-foreground">Nothing</span>
                   )}
                 </td>
                 <td className="py-4 text-muted-foreground">
@@ -214,31 +246,42 @@ export function ClientsTable({ clients }: { clients: StaffClient[] }) {
       <ul className="space-y-3 lg:hidden">
         {clients.map((client) => (
           <li key={client.id} className="rounded-xl border border-border bg-background p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
                 <p className="font-medium">{client.company_name}</p>
-                <p className="text-xs text-muted-foreground">{client.contact_email}</p>
+                <p className="break-all text-xs text-muted-foreground">
+                  {client.contact_email}
+                </p>
+                {client.website_url ? <WebsiteLink url={client.website_url} /> : null}
               </div>
-              <Pill status={client.status} label={client.status_label} />
+              <span className="shrink-0">
+                <Pill status={client.status} label={client.status_label} />
+              </span>
             </div>
-            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-border pt-3 text-sm">
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border pt-3 text-sm">
               <div>
-                <dt className="text-xs text-muted-foreground">Monthly</dt>
+                <dt className="text-xs text-muted-foreground">Pays a month</dt>
                 <dd className="font-medium">
                   {formatMoney(client.monthly_total, client.currency)}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">Owed</dt>
-                <dd className="font-medium">
+                <dt className="text-xs text-muted-foreground">Owes you</dt>
+                <dd
+                  className={
+                    Number(client.outstanding) > 0
+                      ? "font-semibold text-amber-600 dark:text-amber-400"
+                      : "font-medium"
+                  }
+                >
                   {Number(client.outstanding) > 0
                     ? formatMoney(client.outstanding, client.currency)
-                    : "—"}
+                    : "Nothing"}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Plan</dt>
-                <dd>{client.plan_name || "No plan"}</dd>
+                <dd>{client.plan_name || "No plan yet"}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Next payment</dt>
@@ -257,50 +300,108 @@ export function InvoiceTable({
   dateLabel,
   dateOf,
   empty,
+  countdown = false,
 }: {
   invoices: StaffInvoice[];
   dateLabel: string;
   dateOf: (invoice: StaffInvoice) => string | null;
   empty: string;
+  /** Adds "in 6 days" or "5 days late" under the date. Only means anything for a due date. */
+  countdown?: boolean;
 }) {
   if (invoices.length === 0) return <Empty>{empty}</Empty>;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th className="pb-3 pr-4 font-semibold">Invoice</th>
-            <th className="pb-3 pr-4 font-semibold">Client</th>
-            <th className="pb-3 pr-4 text-right font-semibold">Amount</th>
-            <th className="pb-3 pr-4 font-semibold">Status</th>
-            <th className="pb-3 font-semibold">{dateLabel}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {invoices.map((invoice) => (
-            <tr key={invoice.id} className="align-top">
-              <td className="py-3.5 pr-4">
-                <p className="font-medium">{invoice.number}</p>
-                {invoice.description ? (
-                  <p className="text-xs text-muted-foreground">{invoice.description}</p>
-                ) : null}
-              </td>
-              <td className="py-3.5 pr-4">{invoice.company_name}</td>
-              <td className="py-3.5 pr-4 text-right font-medium">
-                {formatMoney(invoice.amount, invoice.currency)}
-              </td>
-              <td className="py-3.5 pr-4">
-                <Pill status={invoice.status} label={invoice.status_label} kind="invoice" />
-              </td>
-              <td className="py-3.5 text-muted-foreground">
-                {formatDate(dateOf(invoice), "—")}
-              </td>
+    <>
+      {/* Wide screens read a table fastest */}
+      <div className="hidden overflow-x-auto lg:block">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="pb-3 pr-4 font-semibold">Invoice</th>
+              <th className="pb-3 pr-4 font-semibold">Client</th>
+              <th className="pb-3 pr-4 text-right font-semibold">Amount</th>
+              <th className="pb-3 pr-4 font-semibold">Status</th>
+              <th className="pb-3 font-semibold">{dateLabel}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {invoices.map((invoice) => {
+              const when = dateOf(invoice);
+              const soon = countdown ? dueIn(when) : null;
+              const late = invoice.status === "overdue";
+              return (
+                <tr key={invoice.id} className="align-top">
+                  <td className="py-3.5 pr-4">
+                    <p className="font-medium">{invoice.number}</p>
+                    {invoice.description ? (
+                      <p className="text-xs text-muted-foreground">{invoice.description}</p>
+                    ) : null}
+                  </td>
+                  <td className="py-3.5 pr-4">{invoice.company_name}</td>
+                  <td className="py-3.5 pr-4 text-right font-medium">
+                    {formatMoney(invoice.amount, invoice.currency)}
+                  </td>
+                  <td className="py-3.5 pr-4">
+                    <Pill status={invoice.status} label={invoice.status_label} kind="invoice" />
+                  </td>
+                  <td className="py-3.5 text-muted-foreground">
+                    {formatDate(when, "—")}
+                    {soon ? (
+                      <span
+                        className={`block text-xs ${
+                          late ? "font-medium text-red-600 dark:text-red-400" : ""
+                        }`}
+                      >
+                        {soon}
+                      </span>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Narrow screens: cards. Five columns on a phone is a sideways scroll,
+          and nobody scrolls a table sideways to find out who owes them money. */}
+      <ul className="space-y-3 lg:hidden">
+        {invoices.map((invoice) => {
+          const when = dateOf(invoice);
+          const soon = countdown ? dueIn(when) : null;
+          const late = invoice.status === "overdue";
+          return (
+            <li key={invoice.id} className="rounded-xl border border-border bg-background p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{invoice.company_name}</p>
+                  {invoice.description ? (
+                    <p className="text-xs text-muted-foreground">{invoice.description}</p>
+                  ) : null}
+                </div>
+                <p className="shrink-0 whitespace-nowrap text-lg font-semibold tracking-tight">
+                  {formatMoney(invoice.amount, invoice.currency)}
+                </p>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border pt-3">
+                <Pill status={invoice.status} label={invoice.status_label} kind="invoice" />
+                <p className="text-xs text-muted-foreground">
+                  {dateLabel} {formatDate(when, "—")}
+                  {soon ? (
+                    <span className={late ? "font-medium text-red-600 dark:text-red-400" : ""}>
+                      {" · "}
+                      {soon}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">{invoice.number}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
 
@@ -326,7 +427,7 @@ export function RequestsList({ requests }: { requests: StaffServiceRequest[] }) 
               {request.details}
             </p>
           ) : null}
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 break-all text-xs text-muted-foreground">
             {request.contact_email} &middot; sent {formatDate(request.created_at)}
           </p>
         </li>

@@ -3,16 +3,20 @@ import Link from "next/link";
 import { site } from "@/lib/site";
 
 /**
- * The Orbit "Aperture" mark: a rounded square with a circular hole and a single
- * slice cut out to the right edge, with a solid core in the middle. It reads as
- * a lens and as the letter O.
+ * The Orbit mark: a business at the centre, its website in orbit around it.
  *
- * Flat shapes in one colour plus a knockout, so it stays sharp down to 20px and
- * prints in a single ink. Do not add gradients, strokes or glow.
+ * What each part means, because a mark that means nothing is just decoration:
  *
- * The knockout has to match whatever sits behind the mark, so pass `onNavy` in
- * the dark header. Everywhere else it follows the card colour, which is white
- * in light mode and dark in dark mode, so the mark works in both.
+ *   the solid core   your business, which is the thing that matters
+ *   the ring         the work that goes round it every month, unbroken
+ *   the satellite    your website, kept moving rather than parked
+ *
+ * It is also a letter O made of an orbit, so the name and the picture say the
+ * same word. The ring is drawn as an open arc with the satellite sitting in
+ * the gap, which is what stops it reading as a full stop at small sizes.
+ *
+ * Two colours at most, no gradients and no glow: it has to survive a browser
+ * tab, a dark header, a white invoice and a single-colour print.
  */
 export function LogoMark({
   className = "h-9 w-9",
@@ -21,20 +25,37 @@ export function LogoMark({
   className?: string;
   onNavy?: boolean;
 }) {
-  const tile = onNavy ? "#2f7bff" : "#0b5fff";
-  const knockout = onNavy ? "#071630" : "var(--card)";
+  const ink = onNavy ? "#2f7bff" : "#0b5fff";
+  const light = onNavy ? "#9cc4ff" : "#4e8dff";
 
   return (
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
-      {/* Rounded square with the circular hole punched out */}
-      <path
-        d="M14 2h36a12 12 0 0 1 12 12v36a12 12 0 0 1-12 12H14A12 12 0 0 1 2 50V14A12 12 0 0 1 14 2Zm18 14a16 16 0 1 0 0 32 16 16 0 0 0 0-32Z"
-        fill={tile}
-      />
-      {/* Slice running from the hole out to the right edge */}
-      <rect x="40" y="28" width="24" height="8" fill={knockout} />
-      {/* Core */}
-      <circle cx="32" cy="32" r="6" fill={tile} />
+      {/*
+        The orbit: an open ring, tilted, with the gap at the top right where
+        the satellite sits. Drawn as a stroke so the counter stays open at
+        any size, which a filled ring loses below about 24px.
+      */}
+      <g transform="rotate(-24 32 32)">
+        <ellipse
+          cx="32"
+          cy="32"
+          rx="25"
+          ry="25"
+          fill="none"
+          stroke={ink}
+          strokeWidth="7"
+          strokeLinecap="round"
+          /* Gap at the top right for the satellite to sit in. */
+          strokeDasharray="118 40"
+          strokeDashoffset="-16"
+        />
+      </g>
+
+      {/* The business: solid, central, the thing everything else serves. */}
+      <circle cx="32" cy="32" r="10" fill={ink} />
+
+      {/* The website, in orbit. Lighter, because it belongs to the client. */}
+      <circle cx="51" cy="14" r="7" fill={light} />
     </svg>
   );
 }
